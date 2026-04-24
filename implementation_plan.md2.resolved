@@ -1,0 +1,325 @@
+# 🎯 Trinetra Demo Polish — From 6/10 to 10/10
+
+## Problem
+The backend (14 agents + Actian VectorAI) is **9.5/10** — but judges can't see it. The frontend has gorgeous aesthetics (Spline 3D, GSAP, glassmorphism) but:
+1. **API port mismatch** — `api.js` defaults to `localhost:8080`, backend runs on `:8000`
+2. **No Actian showcase** — judges can't see the 14 collections, can't query vectors, can't see hybrid search
+3. **No live pipeline view** — agents process silently, judges don't see the "14 agents working in parallel" wow factor
+4. **Demo flow is broken** — no pre-loaded data, cold start = blank screens
+
+## Strategy: 4 Pillars
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    DEMO POLISH PLAN                          │
+├──────────┬──────────┬───────────────┬────────────────────────┤
+│  P0: Fix │ P0: Add  │ P0: Add Live  │ P1: Demo Script       │
+│  Broken  │ VectorAI │ Agent Pipeline│ & Pre-seeded          │
+│  Stuff   │ Explorer │ Visualizer    │ Walkthrough           │
+└──────────┴──────────┴───────────────┴────────────────────────┘
+```
+
+---
+
+## P0-A: Fix Existing Bugs Blocking Demo
+
+### [MODIFY] [api.js](file:///Users/utkarshsingh/Desktop/Trinetra/Frontend/Trinetra-Intelligent-credit/src/services/api.js)
+**Line 5**: Change default port from `8080` to `8000`
+```diff
+-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
++const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+```
+
+### [NEW] Frontend `.env` file
+Create `Frontend/Trinetra-Intelligent-credit/.env` (not just `.env.example`):
+```
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+---
+
+## P0-B: Actian VectorAI Explorer Page ⭐ (THE KILLER FEATURE)
+
+> [!IMPORTANT]
+> This is what will WIN the hackathon. Judges need to SEE Actian being used deeply. A dedicated page showing all 14 collections with live search capability is the ultimate proof.
+
+### [NEW] `src/pages/VectorExplorer.jsx` + `VectorExplorer.css`
+
+**What it shows:**
+1. **Collection Grid** — 14 glassmorphism cards, one per Actian collection, showing doc count and last-updated timestamp
+2. **Live Semantic Search** — A search bar where judges type a query (e.g., "fraud in textile company") and see real-time results from Actian VectorAI with similarity scores
+3. **Hybrid Search Demo** — A toggle for metadata filters (application_id, agent, phase) alongside vector search
+4. **Collection Inspector** — Click any collection card → see recent documents, embeddings (truncated), metadata
+5. **Pipeline Attribution** — Each document shows which agent wrote it and when
+
+**UI Design:**
+- Dark theme matching existing glassmorphism `glass-strong` styling
+- Animated similarity score bars (framer-motion)
+- Real-time search with debounce (300ms)
+- Recharts horizontal bar chart for similarity scores
+
+**Layout:**
+```
+┌─────────────────────────────────────────────────────┐
+│  🔍 Search Actian VectorAI    [query input]  [Go]   │
+│  ☐ Hybrid Search: app_id [____] phase [____]        │
+├─────────────────────────────────────────────────────┤
+│  Results (vector similarity)                         │
+│  ┌──────────────────────────────────────────┐       │
+│  │ 0.94  │ news_articles │ SEBI probes...   │       │
+│  │ 0.87  │ litigation    │ Criminal case... │       │
+│  │ 0.81  │ risk_decisions│ Similar case...  │       │
+│  └──────────────────────────────────────────┘       │
+├──────────┬──────────┬──────────┬────────────────────┤
+│ 📄 14    │ 💰 8     │ 📊 5     │ 🏦 3              │
+│ doc_chunks│ fin_prof │ gst_pat  │ bank_recon        │
+│          │          │          │                    │
+│ 📰 15   │ ⚖️ 10    │ 🏛️ 8     │ 🏢 8              │
+│ news     │ litigation│ rbi_circ │ mca_filings       │
+│          │          │          │                    │
+│ 🆔 2    │ ⚠️ 4     │ 🎤 2     │ 📈 3              │
+│ pan_prof │ risk_dec │ pd_trans │ stress_scen        │
+│          │          │          │                    │
+│ 📋 5    │ 🔍 7     │          │                    │
+│ audit_ev │ app_summ │          │                    │
+└──────────┴──────────┴──────────┴────────────────────┘
+```
+
+### [NEW] Backend endpoint: `GET /api/vectorai/search`
+
+Add to `backend/main.py`:
+```python
+@app.get("/api/vectorai/search")
+async def vectorai_search(q: str, collection: str = "news_articles", top_k: int = 5):
+    """Let frontend query Actian VectorAI directly for demo purposes."""
+    from agents_shared_vectorai import VectorAIClient  # import adapter
+    client = VectorAIClient()
+    results = client.search(collection=collection, query_text=q, top_k=top_k)
+    return {"query": q, "collection": collection, "results": results}
+```
+
+### [NEW] Backend endpoint: `GET /api/vectorai/collections`
+```python
+@app.get("/api/vectorai/collections")
+async def vectorai_collections():
+    """Return stats for all 14 Actian VectorAI collections."""
+    collections = [
+        "document_chunks", "financial_profiles", "gst_patterns",
+        "bank_recon_profiles", "news_articles", "litigation_records",
+        "rbi_circulars", "mca_filings", "pan_profiles", "risk_decisions",
+        "pd_transcripts", "stress_scenarios", "audit_events", "application_summaries",
+    ]
+    return {"collections": collections, "count": len(collections)}
+```
+
+### [NEW] Backend endpoint: `POST /api/vectorai/hybrid-search`
+```python
+@app.post("/api/vectorai/hybrid-search")
+async def vectorai_hybrid_search(body: dict):
+    """Hybrid search: vector + metadata filters."""
+    client = VectorAIClient()
+    results = client.hybrid_search(
+        collection=body.get("collection", "news_articles"),
+        query_text=body.get("query", ""),
+        filters=body.get("filters", {}),
+        top_k=body.get("top_k", 5),
+    )
+    return {"results": results}
+```
+
+---
+
+## P0-C: Live Agent Pipeline Visualizer
+
+### [NEW] `src/pages/AgentPipeline.jsx` + `AgentPipeline.css`
+
+**What it shows:**
+A Sankey-style or node-graph view of all 14 agents with real-time status. As agents process, their nodes light up green with pulse animations. Lines between agents show data flow.
+
+**Layout:**
+```
+┌────────────────────────────────────────────────────────────┐
+│  🔄 Agent Pipeline — Application #abc-1234                  │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  [Compliance] ──✅──▶ [Doc Agent] ──✅──▶ [GST Agent]      │
+│       │                    │                    │          │
+│       │              [Bank Recon] ──✅     [MCA Agent]     │
+│       │                    │                    │          │
+│       ▼                    ▼                    ▼          │
+│  [Web Agent] ──⏳──▶ [Model Sel.] ──▶ [Risk Agent]        │
+│       │                                   │               │
+│       ▼                                   ▼               │
+│  [PD Agent]           [Bias] ←── [Stress Agent]           │
+│       │                 │                                  │
+│       ▼                 ▼                                  │
+│              [CAM Generator] ──✅──▶ 📄 Final Report       │
+│                                                            │
+│  [Monitor Agent 👁️ — watching all events]                   │
+│  [PAN Agent 🆔 — running in parallel]                      │
+│                                                            │
+│  ── Actian VectorAI Traffic ──                             │
+│  ⬆️ 47 upserts  ⬇️ 23 searches  📊 14 collections         │
+└────────────────────────────────────────────────────────────┘
+```
+
+**How it works:**
+- Subscribes to same WebSocket feed as existing `AgentFeedWidget`
+- Each agent node tracks its status: `IDLE → PROCESSING → COMPLETED`
+- Framer-motion pulse animation on active agents
+- Counter at bottom shows Actian VectorAI operations in real-time
+- Edge lines animate with a flowing gradient when data passes between agents
+
+### [MODIFY] `src/App.jsx`
+Add routes for new pages:
+```diff
++import VectorExplorer from './pages/VectorExplorer'
++import AgentPipeline from './pages/AgentPipeline'
+
+ <Route path="/recommendation" element={<RecommendationEngine />} />
++<Route path="/vectorai" element={<VectorExplorer />} />
++<Route path="/pipeline" element={<AgentPipeline />} />
+```
+
+### [MODIFY] `src/components/Sidebar.jsx`
+Add navigation links:
+```diff
++{ path: '/vectorai', label: 'VectorAI Explorer', icon: Database }
++{ path: '/pipeline', label: 'Agent Pipeline', icon: GitBranch }
+```
+
+---
+
+## P0-D: Pre-Seeded Demo Flow
+
+### [NEW] `backend/seed_demo.py`
+
+A script that creates a complete demo application with pre-filled data so judges see a fully processed result immediately:
+
+```python
+"""
+Run: python3 backend/seed_demo.py
+Creates a demo application with all agent namespaces pre-filled.
+"""
+# 1. POST /api/application with sample company data
+# 2. Upload a sample PDF (bundled in repo)
+# 3. Manually PATCH all namespaces with realistic demo data
+# 4. Print the application ID for the frontend
+```
+
+This ensures:
+- Dashboard shows at least 1 real application
+- Research Agent page shows real risk scores + SHAP charts
+- Recommendation Engine shows a complete CAM preview
+- VectorAI Explorer shows populated collections
+
+---
+
+## P1: Polish & Presentation Extras
+
+### P1-1: Landing Page — Add "Powered by Actian VectorAI" Badge
+In the integrations section, replace generic logos with Actian VectorAI as the primary integration:
+```jsx
+{ name: 'Actian VectorAI', Icon: Database, highlight: true }
+```
+
+### P1-2: Dashboard — Replace Mock Data with Real Backend Data
+The dashboard currently falls back to `MOCK_APPLICATIONS`. After the demo seed script runs, it should show real data from the backend.
+
+### P1-3: Agent Feed Widget — Show VectorAI Operations
+Modify `AgentFeedWidget.jsx` to show "Indexed 12 chunks into Actian VectorAI" messages that agents already log.
+
+### P1-4: Loading States
+Add skeleton loaders to VectorExplorer and AgentPipeline so pages look premium even while loading.
+
+---
+
+## Execution Order
+
+| # | Task | Priority | Est. Time | Impact |
+|---|---|---|---|---|
+| 1 | Fix `api.js` port + create `.env` | P0-A | 2 min | Unblocks everything |
+| 2 | Add 3 backend VectorAI endpoints | P0-B | 20 min | Enables Explorer |
+| 3 | Build `VectorExplorer.jsx` page | P0-B | 60 min | **THE demo killer** |
+| 4 | Build `AgentPipeline.jsx` page | P0-C | 45 min | Visual wow factor |
+| 5 | Add routes + sidebar links | P0-C | 5 min | Navigation |
+| 6 | Create `seed_demo.py` script | P0-D | 30 min | Demo data |
+| 7 | Add Actian badge to landing | P1-1 | 5 min | Branding |
+| 8 | Wire dashboard to real data | P1-2 | 15 min | Credibility |
+| 9 | Enhance agent feed | P1-3 | 10 min | Polish |
+| 10 | Add skeleton loaders | P1-4 | 10 min | Premium feel |
+
+**Total estimated time: ~3.5 hours**
+
+---
+
+## Demo Script (3-Minute Hackathon Pitch)
+
+```
+0:00 — Landing page loads with Spline 3D robot. "Trinetra: 14 AI agents 
+       for credit appraisal, powered by Actian VectorAI."
+
+0:20 — Click "Start Analysis" → Data Ingestor page. Upload a sample PDF.
+       "Watch as our Doc Intelligence Agent OCRs this PDF, chunks it into 
+       500-char segments, and embeds every chunk into Actian VectorAI."
+
+0:45 — Switch to Agent Pipeline page. Show nodes lighting up in real-time.
+       "14 agents process simultaneously. Every agent reads from AND writes 
+       to Actian VectorAI. This isn't just storage — it's the intelligent 
+       data layer."
+
+1:15 — Switch to VectorAI Explorer. Type "fraud textile" in search.
+       "Watch — I can semantically search across ALL 14 collections. News 
+       articles, litigation records, RBI circulars, risk decisions — all 
+       queryable with natural language."
+
+1:45 — Toggle Hybrid Search. Add filter: phase=compliance.
+       "Actian's hybrid search lets us combine vector similarity with SQL 
+       filters. No other vector DB gives us this out of the box."
+
+2:15 — Switch to Research Agent page. Show SHAP values, risk score, 
+       rejection reasons.
+       "Every data point in this analysis was retrieved from Actian. The 
+       evidence citations? Document chunks from Actian. Similar past 
+       cases? Vector search in Actian."
+
+2:45 — Switch to Recommendation Engine. Show the CAM report.
+       "A complete Credit Appraisal Memo, generated without any LLM 
+       hallucination, with every claim backed by Actian-sourced evidence."
+
+3:00 — End. "14 agents. 14 collections. One intelligent data layer. 
+       Actian VectorAI."
+```
+
+---
+
+## Verification Plan
+
+### Automated
+```bash
+# 1. Start VectorAI
+docker-compose -f docker-compose.vectorai.yml up -d
+
+# 2. Seed collections
+cd agents && python3 seed_vectorai.py
+
+# 3. Start backend
+cd backend && python3 main.py
+
+# 4. Seed demo application
+python3 backend/seed_demo.py
+
+# 5. Start frontend
+cd Frontend/Trinetra-Intelligent-credit && npm run dev
+
+# 6. Verify endpoints
+curl http://localhost:8000/api/vectorai/collections
+curl "http://localhost:8000/api/vectorai/search?q=fraud&collection=news_articles"
+```
+
+### Manual (Browser)
+1. Open `http://localhost:5173`
+2. Navigate to `/vectorai` — verify 14 collection cards render, search returns results
+3. Navigate to `/pipeline` — verify agent nodes render with correct topology
+4. Navigate to `/ingestor` — upload a PDF, verify agents start processing
+5. Watch `/pipeline` update in real-time as agents complete

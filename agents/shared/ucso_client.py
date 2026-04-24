@@ -3,9 +3,9 @@ Trinetra UCSO Client
 HTTP client for interacting with the FastAPI backend API.
 Each agent uses this to GET the current UCSO state and PATCH its own namespace.
 
-Migration: Spring Boot → FastAPI (March 2026)
+Migration: Spring Boot -> FastAPI (March 2026)
 - Removed 'ucsoData' wrapper unwrap (FastAPI returns raw UCSO)
-- Default port changed from :8080 to :8000
+- Default port changed from :8000 to :8080
 """
 import os
 import requests
@@ -13,7 +13,8 @@ from .logger import get_logger
 
 logger = get_logger("ucso-client")
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080")
+AGENT_SERVICE_TOKEN = os.getenv("AGENT_SERVICE_TOKEN", "")
 
 
 class UcsoClient:
@@ -64,7 +65,10 @@ class UcsoClient:
         """
         url = f"{self.base_url}/api/application/{application_id}/namespace/{namespace}"
         try:
-            resp = requests.patch(url, json=data, timeout=10)
+            headers = {}
+            if AGENT_SERVICE_TOKEN:
+                headers["X-Agent-Token"] = AGENT_SERVICE_TOKEN
+            resp = requests.patch(url, json=data, headers=headers, timeout=10)
             resp.raise_for_status()
             logger.info(
                 f"PATCH {namespace} for {application_id} successful",

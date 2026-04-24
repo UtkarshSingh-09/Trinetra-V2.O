@@ -16,6 +16,10 @@ import pickle
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
+
+
+vectorai = VectorAIClient()
 
 # Model file paths (pre-trained .pkl files stored in S3 or local)
 MODEL_DIR = os.getenv("MODEL_DIR", os.path.join(os.path.dirname(__file__), "..", "risk-agent", "models"))
@@ -105,6 +109,39 @@ class ModelSelectorAgent(AgentBase):
         self.logger.info(
             f"Selected model: {model_name} (v{model_version}) for {application_id}",
             extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
+        )
+
+        similar_profiles = vectorai.search(
+            collection="financial_profiles",
+            query_text=" ".join(
+                [
+                    f"{k}={v}"
+                    for k, v in derived_features.items()
+                    if isinstance(v, (int, float))
+                ]
+            ),
+            top_k=5,
+            min_score=0.70,
+        )
+        past_models = [
+            r.get("metadata", {}).get("model_used")
+            for r in similar_profiles
+            if r.get("metadata", {}).get("model_used")
+        ]
+        if past_models and past_models.count("XGBOOST") >= 3 and model_name != "RULE_FALLBACK":
+            model_name = "XGBOOST"
+
+        vectorai.upsert(
+            collection="application_summaries",
+            doc_id=f"{application_id}_model_selection",
+            text=f"Model selected: {model_name} for application {application_id}",
+            metadata={
+                "application_id": application_id,
+                "agent": self.AGENT_NAME,
+                "model_used": model_name,
+                "feature_count": count_populated_features(derived_features),
+                "phase": "model_selection",
+            },
         )
 
         return {

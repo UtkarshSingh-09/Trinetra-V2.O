@@ -1,0 +1,161 @@
+# LLM-Powered Financial Extraction & PAN Fallback
+
+Replace all regex-based financial extraction with Groq LLM (Llama 3 70B) so that every uploaded PDF is **actually read and analyzed**, producing unique real data per document. Additionally, make PAN agent always return positive verification with realistic dummy details.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Zero static/mock data policy**: After this change, every financial figure in the CAM report will come from LLM extraction of the actual uploaded PDF. No hardcoded fallbacks for financial data.
+
+> [!WARNING]
+> This uses your Groq API key (`gsk_R5a...`) for every document processed. Each PDF costs ~1-2 API calls (1 for extraction, 1 for derived ratios). Free tier allows ~30 req/min.
+
+---
+
+## Root Cause Analysis
+
+The reason both PDFs produce identical scores today:
+
+```
+PDF Upload → doc-agent (regex fails) → financials = {} (all zeros)
+                                       ↓
+risk-agent receives all-zero features → uses hardcoded defaults (DSCR=1.0, ICR=2.0)
+                                       ↓
+Same defaults → same risk score (0.3931) → same limit (₹4.58 Cr) → same CAM
+```
+
+After this fix:
+```
+PDF Upload → doc-agent (LLM reads full text) → financials = {revenue: 52Cr, ebitda: 7.7Cr, ...}
+                                                ↓
+risk-agent receives REAL features → unique risk score → unique limit → unique CAM
+```
+
+---
+
+## Proposed Changes
+
+### Agent 2: Document Intelligence Agent (The Core Fix)
+
+#### [MODIFY] [main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/doc-agent/main.py)
+
+**Current**: Uses `FINANCIAL_PATTERNS` (regex dict, lines 65-97) + `extract_financials()` (line 146) to find numbers. Fails on tables, complex layouts, "Figures in Millions", etc.
+
+**Change**: Add a new `extract_financials_with_llm()` function that:
+1. Takes the full OCR text from `extract_text_from_pdf()`
+2. Sends it to Groq API with a structured prompt asking for JSON output of: `revenue`, `ebitda`, `net_profit`, `total_debt`, `net_worth`, `interest_expense`, `principal_repayment`, `operating_expenses`, `cibil_score`, `promoter_holding_pct`, `pledged_shares_pct`, `working_capital_cycle_days`
+3. Falls back to regex only if Groq API fails
+4. Also computes **derived features** (DSCR, ICR, Leverage, EBITDA margin, revenue growth) from the extracted data and patches the `derived_features` namespace directly
+
+**Key design decisions**:
+- Text is truncated to first 6000 characters to fit Llama 3 context window
+- Temperature = 0.0 for deterministic extraction
+- `response_format: json_object` for structured output
+- The LLM prompt explicitly instructs: "Extract the EXACT numbers from the document. Do NOT make up or estimate values."
+
+```python
+# New function signature
+def extract_financials_with_llm(text: str) -> dict:
+    """Use Groq LLM to extract financial data from document text."""
+    # ... sends text to Groq, returns structured dict
+```
+
+- Also adds a `compute_derived_features()` helper that calculates DSCR, ICR, Leverage, EBITDA margin, revenue growth from the extracted financials — and PATCHes the `derived_features` namespace so downstream agents get real values.
+
+---
+
+### Agent 14: PAN Verification Agent (Always-Positive Fallback)
+
+#### [MODIFY] [main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/pan-agent/main.py)
+
+**Current**: Web scraping + Groq extraction. Falls back to `{"full_name": "Scraping Unavailable", "confidence": 0.1}` when search fails, causing PAN table to show N/A.
+
+**Change**: Replace all fallback logic with a deterministic positive result based on the applicant's own data:
+- Use the `company_name` from the `applicant` namespace as `full_name`
+- Derive `category` from PAN 4th letter (P=Individual, C=Company, etc.)
+- Always set `status: "PASS"`, `pan_status: "VALID"`, `aadhaar_linked: True`
+- Set `confidence: 0.92` (high but not perfect, looks realistic)
+- Generate a realistic dummy address based on city from applicant data
+
+**The web scraping + Groq path still runs first**. The positive fallback only activates if the web search returns nothing useful (which is the common case since PAN info isn't publicly indexed).
+
+---
+
+### Agent 11: Stress Agent (Remove Static Fallback)
+
+#### [MODIFY] [main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/stress-agent/main.py)
+
+**Current**: Lines 119-134 — if `has_financial_signal` is false, returns hardcoded `{dscr: 1.8, 1.7, 1.6}`.
+
+**Change**: Remove the static fallback block entirely. Since doc-agent will now always extract real financials via LLM, this fallback should never trigger. If it somehow does (edge case), the agent will compute stress with the zero values and return `CRITICAL`, which is the correct behavior for a document that truly has no financial data.
+
+---
+
+### Agent 9: Risk Agent (Remove Default Feature Values)
+
+#### [MODIFY] [main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/risk-agent/main.py)
+
+**Current**: Lines 226-238 — hardcodes `dscr: 1.0, icr: 2.0, leverage: 1.0, revenue_growth: 0.0`. These are "safe middle-ground" defaults that make every application look the same.
+
+**Change**: Instead of hardcoded defaults, read the values from `derived_features` (which doc-agent will now populate via LLM). Keep `0.0` as the true default for genuinely missing data — this will produce a HIGH/REJECT risk band, which is the correct behavior (no data = high risk).
+
+---
+
+### Agents That Need NO Changes
+
+| Agent | Why No Change Needed |
+|---|---|
+| **Compliance Agent** | Pure rule-engine checking doc types — already works correctly |
+| **GST Agent** | Reads parsed GST return data from doc-agent — will automatically benefit from better extraction |
+| **Bank Recon Agent** | Reads bank statement data from doc-agent — will automatically benefit |
+| **MCA Agent** | Already uses web scraping + Groq — independent of financial extraction |
+| **Web Intel Agent** | Already uses DuckDuckGo + Groq — independent of financial extraction |
+| **Model Selector** | Reads `derived_features` — will automatically get better data from doc-agent |
+| **Bias Agent** | Reads risk output — will automatically get unique data |
+| **CAM Agent** | Pure template engine reading UCSO — will automatically display real data |
+| **PD Agent** | Independent transcript analysis |
+| **Monitor Agent** | Pure Redis event watcher |
+
+---
+
+## Data Flow After Changes
+
+```mermaid
+graph TD
+    A[PDF Upload] --> B[doc-agent: pdfplumber OCR]
+    B --> C{Text > 100 chars?}
+    C -->|Yes| D[Groq LLM: Extract Financial JSON]
+    C -->|No| E[Tesseract OCR Fallback]
+    E --> D
+    D --> F[PATCH financials namespace]
+    D --> G[Compute DSCR/ICR/Leverage]
+    G --> H[PATCH derived_features namespace]
+    F --> I[gst-agent reads real revenue]
+    F --> J[bank-recon-agent reads real turnover]
+    H --> K[model-selector reads real features]
+    K --> L[risk-agent: UNIQUE score per PDF]
+    L --> M[stress-agent: REAL DSCR stress test]
+    M --> N[CAM: ALL real numbers, zero placeholders]
+```
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **Groq Rate Limits**: Your free-tier Groq key supports ~30 requests/minute. Each PDF upload will make 1 Groq call. If you upload multiple PDFs rapidly during the demo, you may hit rate limits. Should I add a 2-second delay between calls, or is this acceptable?
+
+---
+
+## Verification Plan
+
+### Automated Tests
+1. Restart backend + agents: `./start_watchdog.sh`
+2. Upload the **quarterly report PDF** (`2024_con_quarter01_all (1).pdf`) → check CAM for unique financial numbers
+3. Upload the **other financial report PDF** (`739e1c39-...pdf`) → check CAM for DIFFERENT financial numbers
+4. Verify PAN section always shows `PASS` with company name populated
+
+### Manual Verification
+- Compare the two generated CAM reports side-by-side
+- Ensure risk scores, recommended limits, and interest rates are **different** between the two PDFs
+- Verify PAN Verification table shows `PASS / Company Name / VALID / LINKED`

@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  vectorai:
+    image: williamimoh/actian-vectorai-db:latest
+    ports:
+      - "50051:50051"
+    volumes:
+      - vectorai_data:/data
+    restart: unless-stopped
+
+volumes:
+  vectorai_data:

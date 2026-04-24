@@ -1,46 +1,46 @@
-# How to Verify Trinetra Agents
+# How to Verify Trinetra Agents (Redis + FastAPI)
 
-To verify that the 13 agents are working correctly, follow these steps:
+This project runs on Redis Pub/Sub and FastAPI backend APIs.
 
 ## Prerequisites
-1.  **Kafka Running**: Ensure Kafka is running (locally or via Docker).
-2.  **Dependencies**: Install test dependencies:
-    ```bash
-    pip install flask requests confluent-kafka
-    ```
+1. **Redis Running** at `redis://localhost:6379`
+2. **Backend Running** at `http://localhost:8000`
+3. **Dependencies**:
+   ```bash
+   pip install redis requests flask
+   ```
 
-## Step 1: Start the Mock Backend
-This script simulates the Spring Boot API, allowing agents to GET/PATCH the UCSO state.
+## Step 1: Start backend
 ```bash
-python agents/test_mock_backend.py
+cd backend
+python main.py
 ```
 
-## Step 2: Start the Agents
-You can run agents individually to test them, or run all via Docker. For testing one agent (e.g., Compliance):
+## Step 2: Start agents
 ```bash
-export BACKEND_URL=http://localhost:8080
-export KAFKA_BROKER=localhost:9092
-python agents/compliance-agent/main.py
+cd agents
+./start_all_agents.sh
 ```
 
-## Step 3: Run the Test Pipeline
-This script injects a test event and listens for agent responses.
+## Step 3: Trigger pipeline
+Use the Redis-based pipeline test:
 ```bash
 python agents/test_pipeline.py
 ```
 
-## Step 4: Verify the UCSO State
-After the test runs, you can check the final UCSO JSON in `/tmp/trinetra_mock/<application_id>.json`. This file will contain all the patches made by the agents.
+## Step 4: Verify state and events
+1. Fetch UCSO:
+   ```bash
+   curl http://localhost:8000/api/application/<application_id>
+   ```
+2. Watch logs:
+   ```bash
+   tail -f agents/logs/*.log
+   ```
+3. Verify websocket status feed from `/ws/<application_id>`.
 
-## Testing a Full Chain (Example)
-1.  Start Mock Backend.
-2.  Start `compliance-agent`, `doc-agent`, `gst-agent`.
-3.  Upload a dummy PDF to the mock backend:
-    ```bash
-    curl -F "file=@test.pdf" -F "application_id=123" -F "doc_type=ANNUAL_REPORT" http://localhost:8080/api/files/upload
-    ```
-4.  Trigger the pipeline:
-    ```bash
-    python agents/test_pipeline.py  # (Inside, it triggers 'application_created')
-    ```
-5.  Watch the logs to see the agents process the file in sequence!
+## Full-chain sanity flow
+1. Create application via `POST /api/application`
+2. Upload required docs via `POST /api/files/upload`
+3. Confirm `agent_status` events are emitted
+4. Validate `risk`, `stress_results`, `bias_checks`, and `cam_output` namespaces populate in UCSO

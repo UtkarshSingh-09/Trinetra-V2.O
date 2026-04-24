@@ -1,74 +1,71 @@
 """
 Trinetra Test Pipeline
-Injects Kafka events and monitors agent progress.
+Injects Redis events and monitors agent progress.
 """
 import json
 import time
 import os
 import uuid
-from confluent_kafka import Producer, Consumer, KafkaError
+import redis
 
-KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
-def get_producer():
-    return Producer({"bootstrap.servers": KAFKA_BROKER})
+def get_client():
+    return redis.from_url(REDIS_URL, decode_responses=True)
 
-def get_consumer(topics):
-    c = Consumer({
-        "bootstrap.servers": KAFKA_BROKER,
-        "group.id": "test-monitor-group",
-        "auto.offset.reset": "latest"
-    })
-    c.subscribe(topics)
-    return c
+def get_subscriber(topics):
+    client = get_client()
+    pubsub = client.pubsub()
+    pubsub.subscribe(*topics)
+    return pubsub
 
 def trigger_event(topic, app_id, data=None):
-    p = get_producer()
+    client = get_client()
     payload = {"application_id": app_id}
     if data:
         payload.update(data)
-    
-    p.produce(topic, key=app_id, value=json.dumps(payload).encode('utf-8'))
-    p.flush()
+
+    client.publish(topic, json.dumps(payload))
     print(f" [TEST] Triggered event '{topic}' for app {app_id}")
 
 def monitor_pipeline(app_id, timeout=60):
     topics = ["agent_status", "cam_generated", "compliance_failed"]
-    c = get_consumer(topics)
-    
+    subscriber = get_subscriber(topics)
+
     start_time = time.time()
-    completed_agents = set()
-    
+    _completed_agents = set()
+
     print(f" [TEST] Monitoring pipeline for app {app_id}...")
-    
+
     try:
         while time.time() - start_time < timeout:
-            msg = c.poll(1.0)
-            if msg is None: continue
-            if msg.error(): continue
-            
-            payload = json.loads(msg.value().decode('utf-8'))
-            if payload.get("application_id") != app_id: continue
-            
-            topic = msg.topic()
-            
+            msg = subscriber.get_message(timeout=1.0)
+            if msg is None or msg.get("type") != "message":
+                continue
+
+            payload = json.loads(msg["data"])
+            if payload.get("application_id") != app_id:
+                continue
+
+            topic = msg["channel"]
+
             if topic == "agent_status":
                 agent = payload.get("agent")
                 status = payload.get("status")
                 print(f" [AGENT] {agent}: {status}")
                 if status == "COMPLETED":
-                    completed_agents.add(agent)
-            
+                    _completed_agents.add(agent)
+
             if topic == "cam_generated":
                 print(f" [SUCCESS] CAM generated! Pipeline complete.")
                 break
-                
+
             if topic == "compliance_failed":
                 print(f" [FAIL] Compliance check failed: {payload.get('missing_documents')}")
                 break
-                
+
     finally:
-        c.close()
+        subscriber.close()
 
 if __name__ == "__main__":
     # Example usage

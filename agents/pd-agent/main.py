@@ -15,13 +15,15 @@ import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
 
 import requests as http_requests
 
 # Groq API setup
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama3-70b-8192")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+vectorai = VectorAIClient()
 
 # LLM Evaluation Prompt (strict JSON output)
 PD_EVALUATION_PROMPT = """You are a senior credit risk officer at an Indian bank. 
@@ -213,6 +215,33 @@ class PDTranscriptAgent(AgentBase):
         risk_adj = evaluation.get("overall_risk_adjustment", 0.0)
         risk_adj = max(-0.10, min(0.15, risk_adj))
 
+        similar_app_ids = []
+        if transcript_text.strip():
+            vectorai.upsert(
+                collection="pd_transcripts",
+                doc_id=f"{application_id}_pd",
+                text=transcript_text[:2000],
+                metadata={
+                    "application_id": application_id,
+                    "agent": self.AGENT_NAME,
+                    "source_type": source_type,
+                    "risk_adjustment": round(risk_adj, 4),
+                    "confidence": round(evaluation.get("confidence", 0.0), 4),
+                },
+            )
+            similar_pds = vectorai.search(
+                collection="pd_transcripts",
+                query_text=transcript_text[:1000],
+                top_k=3,
+                min_score=0.70,
+            )
+            similar_app_ids = [
+                r.get("metadata", {}).get("application_id")
+                for r in similar_pds
+                if r.get("metadata", {}).get("application_id")
+                and r.get("metadata", {}).get("application_id") != application_id
+            ]
+
         return {
             "transcript_text": transcript_text,
             "source_type": source_type,
@@ -220,6 +249,7 @@ class PDTranscriptAgent(AgentBase):
             "qualitative_flags": evaluation.get("qualitative_flags", []),
             "risk_adjustment": round(risk_adj, 4),
             "pd_confidence": round(evaluation.get("confidence", 0.0), 4),
+            "similar_past_pds": similar_app_ids,
         }
 
 

@@ -16,6 +16,10 @@ from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
+
+
+vectorai = VectorAIClient()
 
 
 # Keywords to exclude from credit turnover (inter-account transfers & non-revenue)
@@ -185,6 +189,26 @@ class BankReconciliationAgent(AgentBase):
             verdict = "MISMATCH"
         else:
             verdict = "OK"
+
+        recon_text = (
+            f"Bank reconciliation: credit_turnover={bank_credit_total}, "
+            f"divergence={divergence * 100:.1f}%, inflation_flag={inflation_flag}, "
+            f"round_trips={len(round_trips)}, bounces={bounces}, verdict={verdict}"
+        )
+        vectorai.upsert(
+            collection="bank_recon_profiles",
+            doc_id=f"{application_id}_bank_recon",
+            text=recon_text,
+            metadata={
+                "application_id": application_id,
+                "agent": self.AGENT_NAME,
+                "turnover_divergence_pct": round(divergence * 100, 2),
+                "inflation_flag": inflation_flag,
+                "round_trip_count": len(round_trips),
+                "bounce_count": bounces,
+                "verdict": verdict,
+            },
+        )
 
         return {
             "bank_credit_turnover": round(bank_credit_total, 2),

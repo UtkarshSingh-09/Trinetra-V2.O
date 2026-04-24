@@ -49,6 +49,9 @@ class StressTriggerRequest(BaseModel):
     """Re-trigger stress test with custom parameters."""
     interest_rate_hike: float = 2.0
     revenue_drop_pct: float = 20.0
+    # Frontend compatibility fields
+    interest_rate_hike_bps: Optional[float] = None
+    revenue_shock_pct: Optional[float] = None
 
 
 class FileUploadResponse(BaseModel):

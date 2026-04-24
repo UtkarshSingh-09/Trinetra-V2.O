@@ -2,12 +2,12 @@
 Agent 6: MCA Intelligence Agent
 Approach: REST API Consumption
 Tools: requests
-APIs: Surepass MCA API (Primary), Weaviate fallback
+APIs: Surepass MCA API (Primary), Actian VectorAI fallback
 
 Trigger: parsing_completed
 Reads: applicant.cin, applicant.pan
 Writes: mca_intelligence
-Errors: MCA_FETCH_FAIL → use Weaviate MCAFiling collection snapshot.
+Errors: MCA_FETCH_FAIL → use Actian VectorAI mca_filings collection snapshot.
 """
 import sys
 import os
@@ -15,12 +15,13 @@ from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
 
 import requests as http_requests
 
 SUREPASS_TOKEN = os.getenv("SUREPASS_TOKEN", "")
 SUREPASS_MCA_URL = "https://kyc-api.surepass.io/api/v1/company-details/mca-basic"
-WEAVIATE_URL = os.getenv("WEAVIATE_URL", "http://weaviate:8080")
+vectorai = VectorAIClient()
 
 
 def extract_director_changes(data: dict) -> list:
@@ -99,34 +100,17 @@ def fetch_from_surepass(cin: str) -> dict:
     }
 
 
-def fetch_from_weaviate_fallback(company_name: str) -> dict:
+def fetch_from_actian_vectorai(company_name: str) -> dict:
     """
-    Fallback: Query Weaviate MCAFiling collection for pre-seeded data.
+    Fallback: Query Actian VectorAI mca_filings collection for pre-seeded data.
     """
     try:
-        query = {
-            "query": f"""{{
-                Get {{
-                    MCAFiling(
-                        nearText: {{concepts: ["{company_name}"]}}
-                        limit: 5
-                    ) {{
-                        cin
-                        company_name
-                        filing_type
-                        filing_date
-                        description
-                        risk_flag
-                        _additional {{ certainty }}
-                    }}
-                }}
-            }}"""
-        }
-        resp = http_requests.post(
-            f"{WEAVIATE_URL}/v1/graphql", json=query, timeout=10
+        hits = vectorai.search(
+            collection="mca_filings",
+            query_text=f"{company_name} MCA filing company status",
+            top_k=5,
+            min_score=0.60,
         )
-        resp.raise_for_status()
-        hits = resp.json().get("data", {}).get("Get", {}).get("MCAFiling", [])
 
         if not hits:
             return {
@@ -139,19 +123,24 @@ def fetch_from_weaviate_fallback(company_name: str) -> dict:
                 "defaulter_flag": False,
             }
 
-        # Parse Weaviate results into MCA format
-        risk_flags = [h for h in hits if h.get("risk_flag")]
+        risk_flags = [h for h in hits if h.get("metadata", {}).get("risk_flag")]
         return {
             "company_status": "ACTIVE" if not risk_flags else "FLAGGED",
             "director_changes_last_2yr": [],
             "charges_registered": [
-                {"description": h.get("description", ""), "filing_date": h.get("filing_date", "")}
-                for h in hits if h.get("filing_type") == "CHARGE"
+                {
+                    "description": h.get("metadata", {}).get("description", ""),
+                    "filing_date": h.get("metadata", {}).get("filing_date", ""),
+                }
+                for h in hits
+                if h.get("metadata", {}).get("filing_type") == "CHARGE"
             ],
-            "new_charge_flag": any(h.get("filing_type") == "CHARGE" for h in hits),
+            "new_charge_flag": any(
+                h.get("metadata", {}).get("filing_type") == "CHARGE" for h in hits
+            ),
             "director_din_list": [],
             "last_agm_date": "",
-            "defaulter_flag": any(h.get("risk_flag") for h in hits),
+            "defaulter_flag": any(h.get("metadata", {}).get("risk_flag") for h in hits),
         }
 
     except Exception:
@@ -175,7 +164,7 @@ class MCAIntelligenceAgent(AgentBase):
     def process(self, application_id: str, ucso: dict) -> dict:
         """
         Query MCA for company status, director changes, charges.
-        Primary: Surepass API. Fallback: Weaviate MCAFiling snapshot.
+        Primary: Surepass API. Fallback: Actian VectorAI mca_filings snapshot.
         """
         applicant = ucso.get("applicant", {})
         cin = applicant.get("cin", "")
@@ -196,23 +185,45 @@ class MCAIntelligenceAgent(AgentBase):
                 "defaulter_flag": False,
             }
 
-        # Try Weaviate first (Option 1: Free)
+        # Try Actian VectorAI first (local seeded data)
         try:
             self.logger.info(
-                f"Fetching MCA data from Weaviate for company: {company_name}",
+                f"Fetching MCA data from Actian VectorAI for company: {company_name}",
                 extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
             )
-            return fetch_from_weaviate_fallback(company_name)
+            result = fetch_from_actian_vectorai(company_name)
+            mca_text = (
+                f"MCA profile: {company_name}, status={result.get('company_status')}, "
+                f"defaulter={result.get('defaulter_flag')}"
+            )
+            vectorai.upsert(
+                collection="mca_filings",
+                doc_id=f"{application_id}_mca",
+                text=mca_text,
+                metadata={"application_id": application_id, "agent": self.AGENT_NAME, **result},
+            )
+            return result
 
         except Exception as e:
             self.logger.warning(
-                f"Weaviate MCA query failed ({e}), falling back to Surepass if configured",
+                f"Actian MCA query failed ({e}), falling back to Surepass if configured",
                 extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
             )
-            # Fallback to Surepass only if Weaviate fails and token is present
+            # Fallback to Surepass only if Actian fails and token is present
             if cin and SUREPASS_TOKEN:
                 try:
-                    return fetch_from_surepass(cin)
+                    result = fetch_from_surepass(cin)
+                    mca_text = (
+                        f"MCA profile: {company_name}, status={result.get('company_status')}, "
+                        f"defaulter={result.get('defaulter_flag')}"
+                    )
+                    vectorai.upsert(
+                        collection="mca_filings",
+                        doc_id=f"{application_id}_mca",
+                        text=mca_text,
+                        metadata={"application_id": application_id, "agent": self.AGENT_NAME, **result},
+                    )
+                    return result
                 except Exception as ex:
                     self.logger.error(f"Surepass fallback also failed: {ex}")
             

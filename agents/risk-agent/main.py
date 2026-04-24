@@ -16,6 +16,10 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
+
+
+vectorai = VectorAIClient()
 
 
 # ── Feature Normalization (from Blueprint Section 2.1) ──
@@ -219,12 +223,12 @@ class RiskAgent(AgentBase):
 
         # ── Step 1: Build raw feature vector ──
         raw_features = {
-            "dscr": derived.get("dscr", 1.0),
-            "icr": derived.get("icr", 2.0),
-            "leverage": derived.get("leverage", 1.0),
-            "ccc": derived.get("ccc", 60),
+            "dscr": derived.get("dscr", 0.0),
+            "icr": derived.get("icr", 0.0),
+            "leverage": derived.get("leverage", 0.0),
+            "ccc": derived.get("ccc", 0.0),
             "revenue_growth": derived.get("revenue_growth", 0.0),
-            "ebitda_margin": derived.get("ebitda_margin", 0.1),
+            "ebitda_margin": derived.get("ebitda_margin", 0.0),
             "gst_discrepancy": gst.get("gstr2b_vs_3b_discrepancy_pct", 0.0) / 100,
             "circular_trade": gst.get("circular_trade_index", 0.0),
             "litigation_count": len(web.get("litigation_records", [])),
@@ -254,6 +258,25 @@ class RiskAgent(AgentBase):
         # ── Step 3: Compute weighted risk score ──
         score = compute_risk_score(normalized_features)
         band = assign_band(score)
+
+        feature_text = " ".join([f"{k}={v:.4f}" for k, v in normalized_features.items()])
+        similar_cases = vectorai.search(
+            collection="risk_decisions",
+            query_text=feature_text,
+            top_k=5,
+            min_score=0.65,
+        )
+        comparable_cases = [
+            {
+                "application_id": r.get("metadata", {}).get("application_id", ""),
+                "score": r.get("metadata", {}).get("risk_score", 0),
+                "band": r.get("metadata", {}).get("risk_band", ""),
+                "decision": r.get("metadata", {}).get("decision", ""),
+                "similarity": round(r.get("score", 0), 4),
+            }
+            for r in similar_cases
+            if r.get("metadata", {}).get("application_id") != application_id
+        ]
 
         # ── Step 4: Limit and rate calculation ──
         requested = applicant.get("loan_amount_requested", 0)
@@ -316,6 +339,21 @@ class RiskAgent(AgentBase):
             if normalized_features.get("gst_discrepancy_norm", 0) > 0.5:
                 corrective_actions.append("Resolve ITC discrepancies between GSTR-2B and GSTR-3B")
 
+        vectorai.upsert(
+            collection="risk_decisions",
+            doc_id=f"{application_id}_risk",
+            text=f"Risk decision: score={score}, band={band}, decision={decision}. Features: {feature_text}",
+            metadata={
+                "application_id": application_id,
+                "agent": self.AGENT_NAME,
+                "risk_score": score,
+                "risk_band": band,
+                "decision": decision,
+                "model_used": model_used,
+                "industry": applicant.get("industry_sector", ""),
+            },
+        )
+
         return {
             "score": score,
             "band": band,
@@ -330,6 +368,7 @@ class RiskAgent(AgentBase):
             "recommended_rate_bps": rate_bps,
             "rejection_reasons": rejection_reasons,
             "corrective_actions": corrective_actions,
+            "comparable_cases": comparable_cases,
         }
 
 

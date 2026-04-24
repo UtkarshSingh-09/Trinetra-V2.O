@@ -1,0 +1,491 @@
+agents/bank-recon-agent/main.py:9:80: E501 line too long (84 > 79 characters)
+agents/bank-recon-agent/main.py:11:80: E501 line too long (84 > 79 characters)
+agents/bank-recon-agent/main.py:15:1: F401 'datetime.timedelta' imported but unused
+agents/bank-recon-agent/main.py:18:1: E402 module level import not at top of file
+agents/bank-recon-agent/main.py:21:80: E501 line too long (82 > 79 characters)
+agents/bank-recon-agent/main.py:25:80: E501 line too long (81 > 79 characters)
+agents/bank-recon-agent/main.py:48:80: E501 line too long (83 > 79 characters)
+agents/bank-recon-agent/main.py:64:80: E501 line too long (88 > 79 characters)
+agents/bank-recon-agent/main.py:72:80: E501 line too long (80 > 79 characters)
+agents/bank-recon-agent/main.py:77:80: E501 line too long (82 > 79 characters)
+agents/bank-recon-agent/main.py:96:80: E501 line too long (90 > 79 characters)
+agents/bank-recon-agent/main.py:136:80: E501 line too long (88 > 79 characters)
+agents/bias-agent/main.py:17:1: E402 module level import not at top of file
+agents/bias-agent/main.py:76:9: F841 local variable 'original_band' is assigned to but never used
+agents/bias-agent/main.py:116:80: E501 line too long (92 > 79 characters)
+agents/bias-agent/main.py:123:80: E501 line too long (90 > 79 characters)
+agents/bias-agent/main.py:132:80: E501 line too long (96 > 79 characters)
+agents/bias-agent/main.py:150:80: E501 line too long (88 > 79 characters)
+agents/cam-agent/main.py:20:1: E402 module level import not at top of file
+agents/cam-agent/main.py:22:1: E402 module level import not at top of file
+agents/cam-agent/main.py:23:1: E402 module level import not at top of file
+agents/cam-agent/main.py:24:1: E402 module level import not at top of file
+agents/cam-agent/main.py:87:80: E501 line too long (96 > 79 characters)
+agents/cam-agent/main.py:88:23: F541 f-string is missing placeholders
+agents/cam-agent/main.py:92:80: E501 line too long (84 > 79 characters)
+agents/cam-agent/main.py:93:1: W293 blank line contains whitespace
+agents/cam-agent/main.py:100:80: E501 line too long (86 > 79 characters)
+agents/cam-agent/main.py:106:80: E501 line too long (99 > 79 characters)
+agents/cam-agent/main.py:107:80: E501 line too long (91 > 79 characters)
+agents/cam-agent/main.py:108:80: E501 line too long (87 > 79 characters)
+agents/cam-agent/main.py:109:80: E501 line too long (93 > 79 characters)
+agents/cam-agent/main.py:114:80: E501 line too long (82 > 79 characters)
+agents/cam-agent/main.py:116:80: E501 line too long (124 > 79 characters)
+agents/cam-agent/main.py:121:80: E501 line too long (80 > 79 characters)
+agents/cam-agent/main.py:127:80: E501 line too long (89 > 79 characters)
+agents/cam-agent/main.py:128:80: E501 line too long (86 > 79 characters)
+agents/cam-agent/main.py:129:80: E501 line too long (80 > 79 characters)
+agents/cam-agent/main.py:131:80: E501 line too long (92 > 79 characters)
+agents/cam-agent/main.py:142:80: E501 line too long (96 > 79 characters)
+agents/cam-agent/main.py:143:80: E501 line too long (92 > 79 characters)
+agents/cam-agent/main.py:147:80: E501 line too long (87 > 79 characters)
+agents/cam-agent/main.py:160:80: E501 line too long (84 > 79 characters)
+agents/cam-agent/main.py:170:80: E501 line too long (80 > 79 characters)
+agents/cam-agent/main.py:171:80: E501 line too long (85 > 79 characters)
+agents/cam-agent/main.py:175:80: E501 line too long (82 > 79 characters)
+agents/cam-agent/main.py:182:80: E501 line too long (88 > 79 characters)
+agents/cam-agent/main.py:183:80: E501 line too long (93 > 79 characters)
+agents/cam-agent/main.py:218:80: E501 line too long (92 > 79 characters)
+agents/cam-agent/main.py:225:80: E501 line too long (88 > 79 characters)
+agents/cam-agent/main.py:226:80: E501 line too long (82 > 79 characters)
+agents/cam-agent/main.py:275:80: E501 line too long (116 > 79 characters)
+agents/cam-agent/main.py:276:80: E501 line too long (88 > 79 characters)
+agents/cam-agent/main.py:281:23: E201 whitespace after '('
+agents/cam-agent/main.py:281:70: E202 whitespace before ')'
+agents/cam-agent/main.py:282:23: E201 whitespace after '('
+agents/cam-agent/main.py:282:66: E202 whitespace before ')'
+agents/cam-agent/main.py:288:80: E501 line too long (84 > 79 characters)
+agents/cam-agent/main.py:298:80: E501 line too long (84 > 79 characters)
+agents/cam-agent/main.py:303:80: E501 line too long (88 > 79 characters)
+agents/cam-agent/main.py:312:80: E501 line too long (82 > 79 characters)
+agents/cam-agent/main.py:313:80: E501 line too long (92 > 79 characters)
+agents/cam-agent/main.py:320:80: E501 line too long (92 > 79 characters)
+agents/cam-agent/main.py:327:80: E501 line too long (92 > 79 characters)
+agents/cam-agent/main.py:335:80: E501 line too long (88 > 79 characters)
+agents/cam-agent/main.py:346:80: E501 line too long (83 > 79 characters)
+agents/cam-agent/main.py:354:80: E501 line too long (84 > 79 characters)
+agents/compliance-agent/main.py:17:1: E402 module level import not at top of file
+agents/compliance-agent/main.py:36:1: W293 blank line contains whitespace
+agents/compliance-agent/main.py:37:80: E501 line too long (83 > 79 characters)
+agents/compliance-agent/main.py:41:80: E501 line too long (83 > 79 characters)
+agents/compliance-agent/main.py:45:80: E501 line too long (85 > 79 characters)
+agents/compliance-agent/main.py:46:80: E501 line too long (88 > 79 characters)
+agents/compliance-agent/main.py:48:1: W293 blank line contains whitespace
+agents/compliance-agent/main.py:55:80: E501 line too long (84 > 79 characters)
+agents/compliance-agent/main.py:57:1: W293 blank line contains whitespace
+agents/compliance-agent/main.py:58:80: E501 line too long (84 > 79 characters)
+agents/compliance-agent/main.py:59:80: E501 line too long (94 > 79 characters)
+agents/compliance-agent/main.py:60:33: E261 at least two spaces before inline comment
+agents/compliance-agent/main.py:63:80: E501 line too long (92 > 79 characters)
+agents/compliance-agent/main.py:74:80: E501 line too long (88 > 79 characters)
+agents/compliance-agent/main.py:79:80: E501 line too long (87 > 79 characters)
+agents/compliance-agent/main.py:88:80: E501 line too long (88 > 79 characters)
+agents/doc-agent/main.py:4:80: E501 line too long (83 > 79 characters)
+agents/doc-agent/main.py:9:80: E501 line too long (91 > 79 characters)
+agents/doc-agent/main.py:17:1: E402 module level import not at top of file
+agents/doc-agent/main.py:19:1: E402 module level import not at top of file
+agents/doc-agent/main.py:20:1: E402 module level import not at top of file
+agents/doc-agent/main.py:21:1: F401 'PIL.Image' imported but unused
+agents/doc-agent/main.py:21:1: E402 module level import not at top of file
+agents/doc-agent/main.py:22:1: E402 module level import not at top of file
+agents/doc-agent/main.py:62:80: E501 line too long (104 > 79 characters)
+agents/doc-agent/main.py:71:80: E501 line too long (111 > 79 characters)
+agents/doc-agent/main.py:75:80: E501 line too long (87 > 79 characters)
+agents/doc-agent/main.py:76:80: E501 line too long (84 > 79 characters)
+agents/doc-agent/main.py:80:80: E501 line too long (92 > 79 characters)
+agents/doc-agent/main.py:83:80: E501 line too long (98 > 79 characters)
+agents/doc-agent/main.py:97:80: E501 line too long (83 > 79 characters)
+agents/doc-agent/main.py:165:80: E501 line too long (81 > 79 characters)
+agents/doc-agent/main.py:194:80: E501 line too long (88 > 79 characters)
+agents/doc-agent/main.py:197:80: E501 line too long (96 > 79 characters)
+agents/doc-agent/main.py:202:80: E501 line too long (89 > 79 characters)
+agents/doc-agent/main.py:224:80: E501 line too long (83 > 79 characters)
+agents/doc-agent/main.py:228:80: E501 line too long (96 > 79 characters)
+agents/doc-agent/main.py:241:80: E501 line too long (110 > 79 characters)
+agents/doc-agent/main.py:242:80: E501 line too long (92 > 79 characters)
+agents/doc-agent/main.py:248:80: E501 line too long (92 > 79 characters)
+agents/gst-agent/main.py:17:1: E402 module level import not at top of file
+agents/gst-agent/main.py:19:1: E402 module level import not at top of file
+agents/gst-agent/main.py:43:80: E501 line too long (83 > 79 characters)
+agents/gst-agent/main.py:48:80: E501 line too long (84 > 79 characters)
+agents/gst-agent/main.py:78:80: E501 line too long (81 > 79 characters)
+agents/mca-agent/main.py:17:1: E402 module level import not at top of file
+agents/mca-agent/main.py:19:1: E402 module level import not at top of file
+agents/mca-agent/main.py:22:80: E501 line too long (81 > 79 characters)
+agents/mca-agent/main.py:148:80: E501 line too long (98 > 79 characters)
+agents/mca-agent/main.py:151:80: E501 line too long (83 > 79 characters)
+agents/mca-agent/main.py:187:80: E501 line too long (88 > 79 characters)
+agents/mca-agent/main.py:203:80: E501 line too long (88 > 79 characters)
+agents/mca-agent/main.py:209:80: E501 line too long (91 > 79 characters)
+agents/mca-agent/main.py:210:80: E501 line too long (88 > 79 characters)
+agents/mca-agent/main.py:218:1: W293 blank line contains whitespace
+agents/model-selector-agent/main.py:18:1: E402 module level import not at top of file
+agents/model-selector-agent/main.py:21:80: E501 line too long (105 > 79 characters)
+agents/model-selector-agent/main.py:106:80: E501 line too long (84 > 79 characters)
+agents/model-selector-agent/main.py:107:80: E501 line too long (84 > 79 characters)
+agents/monitor-agent/main.py:15:1: F401 'json' imported but unused
+agents/monitor-agent/main.py:20:1: E402 module level import not at top of file
+agents/monitor-agent/main.py:84:80: E501 line too long (86 > 79 characters)
+agents/monitor-agent/main.py:90:80: E501 line too long (121 > 79 characters)
+agents/monitor-agent/main.py:94:80: E501 line too long (108 > 79 characters)
+agents/monitor-agent/main.py:95:80: E501 line too long (92 > 79 characters)
+agents/monitor-agent/main.py:97:80: E501 line too long (98 > 79 characters)
+agents/monitor-agent/main.py:106:80: E501 line too long (142 > 79 characters)
+agents/monitor-agent/main.py:110:80: E501 line too long (92 > 79 characters)
+agents/monitor-agent/main.py:111:80: E501 line too long (88 > 79 characters)
+agents/monitor-agent/main.py:121:80: E501 line too long (134 > 79 characters)
+agents/monitor-agent/main.py:125:80: E501 line too long (83 > 79 characters)
+agents/monitor-agent/main.py:126:80: E501 line too long (88 > 79 characters)
+agents/monitor-agent/main.py:136:80: E501 line too long (144 > 79 characters)
+agents/monitor-agent/main.py:152:80: E501 line too long (101 > 79 characters)
+agents/monitor-agent/main.py:163:80: E501 line too long (130 > 79 characters)
+agents/monitor-agent/main.py:183:80: E501 line too long (82 > 79 characters)
+agents/monitor-agent/main.py:184:80: E501 line too long (88 > 79 characters)
+agents/monitor-agent/main.py:189:80: E501 line too long (88 > 79 characters)
+agents/monitor-agent/main.py:192:80: E501 line too long (96 > 79 characters)
+agents/pan-agent/main.py:18:1: E402 module level import not at top of file
+agents/pan-agent/main.py:20:1: E402 module level import not at top of file
+agents/pan-agent/main.py:22:1: E402 module level import not at top of file
+agents/pan-agent/main.py:23:1: F401 'bs4.BeautifulSoup' imported but unused
+agents/pan-agent/main.py:23:1: E402 module level import not at top of file
+agents/pan-agent/main.py:29:59: W291 trailing whitespace
+agents/pan-agent/main.py:30:80: E501 line too long (153 > 79 characters)
+agents/pan-agent/main.py:44:80: E501 line too long (106 > 79 characters)
+agents/pan-agent/main.py:47:1: E302 expected 2 blank lines, found 1
+agents/pan-agent/main.py:52:80: E501 line too long (98 > 79 characters)
+agents/pan-agent/main.py:60:1: E302 expected 2 blank lines, found 1
+agents/pan-agent/main.py:65:80: E501 line too long (107 > 79 characters)
+agents/pan-agent/main.py:74:80: E501 line too long (93 > 79 characters)
+agents/pan-agent/main.py:79:80: E501 line too long (89 > 79 characters)
+agents/pan-agent/main.py:85:80: E501 line too long (85 > 79 characters)
+agents/pan-agent/main.py:92:1: E302 expected 2 blank lines, found 1
+agents/pan-agent/main.py:118:80: E501 line too long (88 > 79 characters)
+agents/pan-agent/main.py:123:1: W293 blank line contains whitespace
+agents/pan-agent/main.py:128:80: E501 line too long (113 > 79 characters)
+agents/pan-agent/main.py:129:80: E501 line too long (88 > 79 characters)
+agents/pan-agent/main.py:133:80: E501 line too long (88 > 79 characters)
+agents/pan-agent/main.py:160:1: E305 expected 2 blank lines after class or function definition, found 1
+agents/pd-agent/main.py:9:80: E501 line too long (88 > 79 characters)
+agents/pd-agent/main.py:17:1: E402 module level import not at top of file
+agents/pd-agent/main.py:19:1: E402 module level import not at top of file
+agents/pd-agent/main.py:27:80: E501 line too long (81 > 79 characters)
+agents/pd-agent/main.py:27:82: W291 trailing whitespace
+agents/pd-agent/main.py:28:80: E501 line too long (83 > 79 characters)
+agents/pd-agent/main.py:31:80: E501 line too long (115 > 79 characters)
+agents/pd-agent/main.py:32:80: E501 line too long (150 > 79 characters)
+agents/pd-agent/main.py:33:80: E501 line too long (134 > 79 characters)
+agents/pd-agent/main.py:35:80: E501 line too long (92 > 79 characters)
+agents/pd-agent/main.py:49:80: E501 line too long (126 > 79 characters)
+agents/pd-agent/main.py:83:80: E501 line too long (80 > 79 characters)
+agents/pd-agent/main.py:97:80: E501 line too long (90 > 79 characters)
+agents/pd-agent/main.py:134:80: E501 line too long (84 > 79 characters)
+agents/pd-agent/main.py:147:80: E501 line too long (104 > 79 characters)
+agents/pd-agent/main.py:163:80: E501 line too long (87 > 79 characters)
+agents/pd-agent/main.py:204:80: E501 line too long (85 > 79 characters)
+agents/risk-agent/main.py:7:80: E501 line too long (86 > 79 characters)
+agents/risk-agent/main.py:18:1: E402 module level import not at top of file
+agents/risk-agent/main.py:95:80: E501 line too long (96 > 79 characters)
+agents/risk-agent/main.py:109:80: E501 line too long (87 > 79 characters)
+agents/risk-agent/main.py:110:80: E501 line too long (83 > 79 characters)
+agents/risk-agent/main.py:111:80: E501 line too long (94 > 79 characters)
+agents/risk-agent/main.py:112:80: E501 line too long (88 > 79 characters)
+agents/risk-agent/main.py:113:80: E501 line too long (82 > 79 characters)
+agents/risk-agent/main.py:115:80: E501 line too long (83 > 79 characters)
+agents/risk-agent/main.py:116:80: E501 line too long (92 > 79 characters)
+agents/risk-agent/main.py:180:80: E501 line too long (95 > 79 characters)
+agents/risk-agent/main.py:195:80: E501 line too long (85 > 79 characters)
+agents/risk-agent/main.py:215:9: F841 local variable 'bank' is assigned to but never used
+agents/risk-agent/main.py:228:80: E501 line too long (82 > 79 characters)
+agents/risk-agent/main.py:232:80: E501 line too long (86 > 79 characters)
+agents/risk-agent/main.py:244:80: E501 line too long (83 > 79 characters)
+agents/risk-agent/main.py:245:80: E501 line too long (101 > 79 characters)
+agents/risk-agent/main.py:246:80: E501 line too long (98 > 79 characters)
+agents/risk-agent/main.py:247:80: E501 line too long (98 > 79 characters)
+agents/risk-agent/main.py:248:80: E501 line too long (95 > 79 characters)
+agents/risk-agent/main.py:249:80: E501 line too long (95 > 79 characters)
+agents/risk-agent/main.py:250:80: E501 line too long (95 > 79 characters)
+agents/risk-agent/main.py:281:80: E501 line too long (84 > 79 characters)
+agents/risk-agent/main.py:282:80: E501 line too long (89 > 79 characters)
+agents/risk-agent/main.py:286:80: E501 line too long (92 > 79 characters)
+agents/risk-agent/main.py:299:80: E501 line too long (88 > 79 characters)
+agents/risk-agent/main.py:304:80: E501 line too long (105 > 79 characters)
+agents/risk-agent/main.py:313:80: E501 line too long (99 > 79 characters)
+agents/risk-agent/main.py:315:80: E501 line too long (97 > 79 characters)
+agents/risk-agent/main.py:317:80: E501 line too long (98 > 79 characters)
+agents/shared/agent_base.py:3:80: E501 line too long (83 > 79 characters)
+agents/shared/agent_base.py:9:80: E501 line too long (80 > 79 characters)
+agents/shared/agent_base.py:14:1: F401 'sys' imported but unused
+agents/shared/agent_base.py:23:1: E402 module level import not at top of file
+agents/shared/agent_base.py:24:1: E402 module level import not at top of file
+agents/shared/agent_base.py:25:1: E402 module level import not at top of file
+agents/shared/agent_base.py:66:80: E501 line too long (81 > 79 characters)
+agents/shared/agent_base.py:79:80: E501 line too long (84 > 79 characters)
+agents/shared/agent_base.py:82:80: E501 line too long (87 > 79 characters)
+agents/shared/agent_base.py:83:80: E501 line too long (87 > 79 characters)
+agents/shared/agent_base.py:84:80: E501 line too long (110 > 79 characters)
+agents/shared/agent_base.py:122:80: E501 line too long (84 > 79 characters)
+agents/shared/agent_base.py:138:80: E501 line too long (101 > 79 characters)
+agents/shared/agent_base.py:143:80: E501 line too long (100 > 79 characters)
+agents/shared/agent_base.py:164:80: E501 line too long (81 > 79 characters)
+agents/shared/agent_base.py:172:80: E501 line too long (126 > 79 characters)
+agents/shared/agent_base.py:196:80: E501 line too long (84 > 79 characters)
+agents/shared/ucso_client.py:22:80: E501 line too long (85 > 79 characters)
+agents/shared/ucso_client.py:54:80: E501 line too long (87 > 79 characters)
+agents/shared/ucso_client.py:60:80: E501 line too long (82 > 79 characters)
+agents/shared/ucso_client.py:66:80: E501 line too long (87 > 79 characters)
+agents/shared/ucso_client.py:75:80: E501 line too long (86 > 79 characters)
+agents/shared/ucso_client.py:79:80: E501 line too long (82 > 79 characters)
+agents/shared/ucso_client.py:82:80: E501 line too long (85 > 79 characters)
+agents/shared/ucso_client.py:102:80: E501 line too long (84 > 79 characters)
+agents/shared/ucso_client.py:105:80: E501 line too long (80 > 79 characters)
+agents/stress-agent/main.py:17:1: E402 module level import not at top of file
+agents/stress-agent/main.py:20:80: E501 line too long (82 > 79 characters)
+agents/stress-agent/main.py:48:80: E501 line too long (95 > 79 characters)
+agents/stress-agent/main.py:54:1: W293 blank line contains whitespace
+agents/stress-agent/main.py:58:80: E501 line too long (111 > 79 characters)
+agents/stress-agent/main.py:59:80: E501 line too long (89 > 79 characters)
+agents/stress-agent/main.py:106:80: E501 line too long (91 > 79 characters)
+agents/stress-agent/main.py:110:80: E501 line too long (88 > 79 characters)
+agents/stress-agent/main.py:116:80: E501 line too long (83 > 79 characters)
+agents/stress-agent/main.py:118:37: E261 at least two spaces before inline comment
+agents/stress-agent/main.py:123:80: E501 line too long (83 > 79 characters)
+agents/stress-agent/main.py:129:80: E501 line too long (83 > 79 characters)
+agents/stress-agent/main.py:161:80: E501 line too long (88 > 79 characters)
+agents/stress-agent/main.py:173:80: E501 line too long (88 > 79 characters)
+agents/test_agents_direct.py:9:1: F401 'json' imported but unused
+agents/test_agents_direct.py:31:80: E501 line too long (96 > 79 characters)
+agents/test_agents_direct.py:32:80: E501 line too long (88 > 79 characters)
+agents/test_agents_direct.py:33:80: E501 line too long (90 > 79 characters)
+agents/test_agents_direct.py:76:80: E501 line too long (113 > 79 characters)
+agents/test_agents_direct.py:77:80: E501 line too long (97 > 79 characters)
+agents/test_agents_direct.py:126:80: E501 line too long (99 > 79 characters)
+agents/test_agents_direct.py:127:80: E501 line too long (93 > 79 characters)
+agents/test_agents_direct.py:160:5: F841 local variable 'mod' is assigned to but never used
+agents/test_agents_direct.py:166:1: E302 expected 2 blank lines, found 1
+agents/test_agents_direct.py:214:80: E501 line too long (96 > 79 characters)
+agents/test_agents_direct.py:248:80: E501 line too long (90 > 79 characters)
+agents/test_agents_direct.py:258:80: E501 line too long (91 > 79 characters)
+agents/test_agents_direct.py:260:80: E501 line too long (94 > 79 characters)
+agents/test_agents_direct.py:267:80: E501 line too long (80 > 79 characters)
+agents/test_agents_direct.py:312:80: E501 line too long (82 > 79 characters)
+agents/test_agents_direct.py:325:80: E501 line too long (106 > 79 characters)
+agents/test_agents_direct.py:326:80: E501 line too long (107 > 79 characters)
+agents/test_agents_direct.py:327:80: E501 line too long (132 > 79 characters)
+agents/test_agents_direct.py:330:80: E501 line too long (98 > 79 characters)
+agents/test_agents_direct.py:331:80: E501 line too long (96 > 79 characters)
+agents/test_agents_direct.py:332:80: E501 line too long (105 > 79 characters)
+agents/test_agents_direct.py:339:80: E501 line too long (120 > 79 characters)
+agents/test_agents_direct.py:349:80: E501 line too long (85 > 79 characters)
+agents/test_agents_direct.py:350:80: E501 line too long (81 > 79 characters)
+agents/test_agents_direct.py:388:80: E501 line too long (80 > 79 characters)
+agents/test_agents_direct.py:393:80: E501 line too long (84 > 79 characters)
+agents/test_agents_direct.py:416:15: F541 f-string is missing placeholders
+agents/test_full_pipeline.py:17:1: F401 'traceback' imported but unused
+agents/test_full_pipeline.py:43:80: E501 line too long (104 > 79 characters)
+agents/test_full_pipeline.py:44:80: E501 line too long (95 > 79 characters)
+agents/test_full_pipeline.py:45:80: E501 line too long (95 > 79 characters)
+agents/test_full_pipeline.py:46:80: E501 line too long (84 > 79 characters)
+agents/test_full_pipeline.py:52:80: E501 line too long (87 > 79 characters)
+agents/test_full_pipeline.py:54:80: E501 line too long (85 > 79 characters)
+agents/test_full_pipeline.py:78:80: E501 line too long (83 > 79 characters)
+agents/test_full_pipeline.py:79:80: E501 line too long (93 > 79 characters)
+agents/test_full_pipeline.py:116:5: F841 local variable 'app_id' is assigned to but never used
+agents/test_full_pipeline.py:142:13: F541 f-string is missing placeholders
+agents/test_full_pipeline.py:150:80: E501 line too long (82 > 79 characters)
+agents/test_full_pipeline.py:153:80: E501 line too long (95 > 79 characters)
+agents/test_full_pipeline.py:164:80: E501 line too long (96 > 79 characters)
+agents/test_full_pipeline.py:165:80: E501 line too long (96 > 79 characters)
+agents/test_full_pipeline.py:166:80: E501 line too long (96 > 79 characters)
+agents/test_full_pipeline.py:174:80: E501 line too long (88 > 79 characters)
+agents/test_full_pipeline.py:176:80: E501 line too long (93 > 79 characters)
+agents/test_full_pipeline.py:177:80: E501 line too long (87 > 79 characters)
+agents/test_full_pipeline.py:178:13: F541 f-string is missing placeholders
+agents/test_full_pipeline.py:200:13: F541 f-string is missing placeholders
+agents/test_full_pipeline.py:218:80: E501 line too long (85 > 79 characters)
+agents/test_full_pipeline.py:221:80: E501 line too long (123 > 79 characters)
+agents/test_full_pipeline.py:222:80: E501 line too long (109 > 79 characters)
+agents/test_full_pipeline.py:223:80: E501 line too long (107 > 79 characters)
+agents/test_full_pipeline.py:229:80: E501 line too long (93 > 79 characters)
+agents/test_full_pipeline.py:231:80: E501 line too long (110 > 79 characters)
+agents/test_full_pipeline.py:264:80: E501 line too long (97 > 79 characters)
+agents/test_full_pipeline.py:265:80: E501 line too long (99 > 79 characters)
+agents/test_full_pipeline.py:267:80: E501 line too long (86 > 79 characters)
+agents/test_full_pipeline.py:268:80: E501 line too long (80 > 79 characters)
+agents/test_full_pipeline.py:272:80: E501 line too long (84 > 79 characters)
+agents/test_full_pipeline.py:273:80: E501 line too long (86 > 79 characters)
+agents/test_full_pipeline.py:277:80: E501 line too long (80 > 79 characters)
+agents/test_full_pipeline.py:279:80: E501 line too long (93 > 79 characters)
+agents/test_full_pipeline.py:281:13: F541 f-string is missing placeholders
+agents/test_full_pipeline.py:301:80: E501 line too long (85 > 79 characters)
+agents/test_full_pipeline.py:313:80: E501 line too long (80 > 79 characters)
+agents/test_full_pipeline.py:335:13: F541 f-string is missing placeholders
+agents/test_full_pipeline.py:346:80: E501 line too long (92 > 79 characters)
+agents/test_full_pipeline.py:353:80: E501 line too long (103 > 79 characters)
+agents/test_full_pipeline.py:360:80: E501 line too long (129 > 79 characters)
+agents/test_full_pipeline.py:390:80: E501 line too long (86 > 79 characters)
+agents/test_full_pipeline.py:393:80: E501 line too long (81 > 79 characters)
+agents/test_full_pipeline.py:413:80: E501 line too long (95 > 79 characters)
+agents/test_full_pipeline.py:414:80: E501 line too long (93 > 79 characters)
+agents/test_full_pipeline.py:415:80: E501 line too long (103 > 79 characters)
+agents/test_full_pipeline.py:430:11: F541 f-string is missing placeholders
+agents/test_full_pipeline.py:436:15: F541 f-string is missing placeholders
+agents/test_full_pipeline.py:437:80: E501 line too long (88 > 79 characters)
+agents/test_full_pipeline.py:438:80: E501 line too long (94 > 79 characters)
+agents/test_full_pipeline.py:440:15: F541 f-string is missing placeholders
+agents/test_full_pipeline.py:441:80: E501 line too long (81 > 79 characters)
+agents/test_full_pipeline.py:444:80: E501 line too long (107 > 79 characters)
+agents/test_full_pipeline.py:448:11: F541 f-string is missing placeholders
+agents/test_full_pipeline.py:449:11: F541 f-string is missing placeholders
+agents/test_mock_backend.py:9:1: F401 'uuid' imported but unused
+agents/test_mock_backend.py:19:80: E501 line too long (83 > 79 characters)
+agents/test_mock_backend.py:37:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:46:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:49:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:52:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:56:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:58:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:66:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:69:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:78:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:81:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:86:1: W293 blank line contains whitespace
+agents/test_mock_backend.py:100:11: F541 f-string is missing placeholders
+agents/test_pipeline.py:13:1: E302 expected 2 blank lines, found 1
+agents/test_pipeline.py:16:1: E302 expected 2 blank lines, found 1
+agents/test_pipeline.py:22:1: E302 expected 2 blank lines, found 1
+agents/test_pipeline.py:31:1: E302 expected 2 blank lines, found 1
+agents/test_pipeline.py:60:23: F541 f-string is missing placeholders
+agents/test_pipeline.py:64:80: E501 line too long (93 > 79 characters)
+agents/test_pipeline.py:70:1: E305 expected 2 blank lines after class or function definition, found 1
+agents/test_pipeline.py:74:1: W293 blank line contains whitespace
+agents/test_pipeline.py:75:80: E501 line too long (97 > 79 characters)
+agents/test_pipeline.py:78:1: W293 blank line contains whitespace
+agents/test_pipeline.py:80:1: W293 blank line contains whitespace
+agents/test_with_docs.py:23:1: F401 'pickle' imported but unused
+agents/test_with_docs.py:24:1: F401 'datetime.timezone' imported but unused
+agents/test_with_docs.py:67:80: E501 line too long (87 > 79 characters)
+agents/test_with_docs.py:82:80: E501 line too long (91 > 79 characters)
+agents/test_with_docs.py:84:80: E501 line too long (103 > 79 characters)
+agents/test_with_docs.py:89:5: E306 expected 1 blank line before a nested definition, found 0
+agents/test_with_docs.py:122:80: E501 line too long (98 > 79 characters)
+agents/test_with_docs.py:128:80: E501 line too long (90 > 79 characters)
+agents/test_with_docs.py:131:80: E501 line too long (80 > 79 characters)
+agents/test_with_docs.py:132:80: E501 line too long (86 > 79 characters)
+agents/test_with_docs.py:174:80: E501 line too long (81 > 79 characters)
+agents/test_with_docs.py:175:80: E501 line too long (83 > 79 characters)
+agents/test_with_docs.py:245:34: F541 f-string is missing placeholders
+agents/test_with_docs.py:245:80: E501 line too long (90 > 79 characters)
+agents/test_with_docs.py:249:80: E501 line too long (108 > 79 characters)
+agents/test_with_docs.py:255:80: E501 line too long (81 > 79 characters)
+agents/test_with_docs.py:256:21: E722 do not use bare 'except'
+agents/test_with_docs.py:300:80: E501 line too long (88 > 79 characters)
+agents/test_with_docs.py:327:80: E501 line too long (108 > 79 characters)
+agents/test_with_docs.py:329:80: E501 line too long (101 > 79 characters)
+agents/test_with_docs.py:350:80: E501 line too long (92 > 79 characters)
+agents/test_with_docs.py:352:80: E501 line too long (88 > 79 characters)
+agents/test_with_docs.py:366:80: E501 line too long (81 > 79 characters)
+agents/test_with_docs.py:383:80: E501 line too long (90 > 79 characters)
+agents/test_with_docs.py:384:80: E501 line too long (99 > 79 characters)
+agents/test_with_docs.py:386:80: E501 line too long (86 > 79 characters)
+agents/test_with_docs.py:387:80: E501 line too long (80 > 79 characters)
+agents/test_with_docs.py:391:80: E501 line too long (84 > 79 characters)
+agents/test_with_docs.py:392:80: E501 line too long (86 > 79 characters)
+agents/test_with_docs.py:396:80: E501 line too long (80 > 79 characters)
+agents/test_with_docs.py:403:8: F541 f-string is missing placeholders
+agents/test_with_docs.py:412:80: E501 line too long (81 > 79 characters)
+agents/test_with_docs.py:418:80: E501 line too long (100 > 79 characters)
+agents/test_with_docs.py:454:80: E501 line too long (106 > 79 characters)
+agents/test_with_docs.py:457:80: E501 line too long (80 > 79 characters)
+agents/test_with_docs.py:473:80: E501 line too long (105 > 79 characters)
+agents/test_with_docs.py:495:11: F541 f-string is missing placeholders
+agents/test_with_docs.py:499:15: F541 f-string is missing placeholders
+agents/test_with_docs.py:500:80: E501 line too long (88 > 79 characters)
+agents/test_with_docs.py:501:80: E501 line too long (84 > 79 characters)
+agents/test_with_docs.py:503:15: F541 f-string is missing placeholders
+agents/test_with_docs.py:505:11: F541 f-string is missing placeholders
+agents/test_with_docs.py:516:11: F541 f-string is missing placeholders
+agents/train_risk_models.py:23:1: F401 'sys' imported but unused
+agents/train_risk_models.py:34:1: F401 'sklearn.metrics.classification_report' imported but unused
+agents/train_risk_models.py:34:1: F401 'sklearn.metrics.precision_recall_curve' imported but unused
+agents/train_risk_models.py:38:1: F401 'sklearn.calibration.CalibratedClassifierCV' imported but unused
+agents/train_risk_models.py:53:1: E302 expected 2 blank lines, found 1
+agents/train_risk_models.py:212:80: E501 line too long (81 > 79 characters)
+agents/train_risk_models.py:216:80: E501 line too long (108 > 79 characters)
+agents/train_risk_models.py:220:80: E501 line too long (89 > 79 characters)
+agents/train_risk_models.py:224:80: E501 line too long (96 > 79 characters)
+agents/train_risk_models.py:231:80: E501 line too long (83 > 79 characters)
+agents/train_risk_models.py:252:80: E501 line too long (99 > 79 characters)
+agents/train_risk_models.py:298:11: F541 f-string is missing placeholders
+agents/train_risk_models.py:335:80: E501 line too long (82 > 79 characters)
+agents/train_risk_models.py:338:80: E501 line too long (87 > 79 characters)
+agents/train_risk_models.py:348:80: E501 line too long (83 > 79 characters)
+agents/train_risk_models.py:353:11: F541 f-string is missing placeholders
+agents/train_risk_models.py:375:80: E501 line too long (82 > 79 characters)
+agents/train_risk_models.py:385:80: E501 line too long (113 > 79 characters)
+agents/train_risk_models.py:389:11: F541 f-string is missing placeholders
+agents/train_risk_models.py:396:11: F541 f-string is missing placeholders
+agents/train_risk_models.py:402:11: F541 f-string is missing placeholders
+agents/train_risk_models.py:404:80: E501 line too long (88 > 79 characters)
+agents/train_risk_models.py:407:80: E501 line too long (132 > 79 characters)
+agents/train_risk_models.py:411:80: E501 line too long (81 > 79 characters)
+agents/train_risk_models.py:413:11: F541 f-string is missing placeholders
+agents/train_risk_models.py:413:80: E501 line too long (85 > 79 characters)
+agents/web-agent/main.py:4:80: E501 line too long (80 > 79 characters)
+agents/web-agent/main.py:11:80: E501 line too long (82 > 79 characters)
+agents/web-agent/main.py:18:1: E402 module level import not at top of file
+agents/web-agent/main.py:20:1: E402 module level import not at top of file
+agents/web-agent/main.py:21:1: E402 module level import not at top of file
+agents/web-agent/main.py:60:80: E501 line too long (81 > 79 characters)
+agents/web-agent/main.py:102:80: E501 line too long (83 > 79 characters)
+agents/web-agent/main.py:116:80: E501 line too long (95 > 79 characters)
+agents/web-agent/main.py:157:80: E501 line too long (91 > 79 characters)
+agents/web-agent/main.py:158:80: E501 line too long (87 > 79 characters)
+agents/web-agent/main.py:223:80: E501 line too long (82 > 79 characters)
+agents/web-agent/main.py:234:80: E501 line too long (84 > 79 characters)
+agents/web-agent/main.py:241:80: E501 line too long (84 > 79 characters)
+agents/web-agent/main.py:258:80: E501 line too long (86 > 79 characters)
+agents/web-agent/main.py:259:80: E501 line too long (83 > 79 characters)
+backend/config.py:12:80: E501 line too long (105 > 79 characters)
+backend/config.py:20:80: E501 line too long (98 > 79 characters)
+backend/main.py:17:80: E501 line too long (113 > 79 characters)
+backend/main.py:78:80: E501 line too long (87 > 79 characters)
+backend/main.py:86:80: E501 line too long (92 > 79 characters)
+backend/main.py:87:80: E501 line too long (85 > 79 characters)
+backend/main.py:151:80: E501 line too long (80 > 79 characters)
+backend/main.py:197:1: W293 blank line contains whitespace
+backend/main.py:200:80: E501 line too long (121 > 79 characters)
+backend/main.py:228:80: E501 line too long (87 > 79 characters)
+backend/main.py:230:80: E501 line too long (82 > 79 characters)
+backend/main.py:232:80: E501 line too long (84 > 79 characters)
+backend/main.py:243:80: E501 line too long (94 > 79 characters)
+backend/main.py:244:80: E501 line too long (86 > 79 characters)
+backend/main.py:256:80: E501 line too long (93 > 79 characters)
+backend/main.py:274:80: E501 line too long (96 > 79 characters)
+backend/main.py:279:80: E501 line too long (83 > 79 characters)
+backend/main.py:285:80: E501 line too long (88 > 79 characters)
+backend/main.py:287:80: E501 line too long (80 > 79 characters)
+backend/main.py:297:80: E501 line too long (96 > 79 characters)
+backend/main.py:304:80: E501 line too long (83 > 79 characters)
+backend/main.py:317:80: E501 line too long (84 > 79 characters)
+backend/main.py:318:80: E501 line too long (96 > 79 characters)
+backend/main.py:324:80: E501 line too long (82 > 79 characters)
+backend/main.py:345:80: E501 line too long (97 > 79 characters)
+backend/models.py:5:1: F401 'pydantic.Field' imported but unused
+backend/models.py:7:1: F401 'uuid.UUID' imported but unused
+backend/redis_broker.py:7:1: F401 'asyncio' imported but unused
+backend/storage/actian_adapter.py:63:80: E501 line too long (118 > 79 characters)
+backend/storage/actian_adapter.py:75:80: E501 line too long (115 > 79 characters)
+backend/storage/actian_adapter.py:83:80: E501 line too long (99 > 79 characters)
+backend/storage/actian_adapter.py:130:80: E501 line too long (106 > 79 characters)
+backend/storage/actian_adapter.py:133:80: E501 line too long (96 > 79 characters)
+backend/storage/actian_adapter.py:161:80: E501 line too long (121 > 79 characters)
+backend/storage/actian_adapter.py:163:80: E501 line too long (84 > 79 characters)
+backend/storage/actian_adapter.py:165:80: E501 line too long (93 > 79 characters)
+backend/storage/actian_adapter.py:185:80: E501 line too long (83 > 79 characters)
+backend/storage/base.py:18:80: E501 line too long (115 > 79 characters)
+backend/storage/base.py:26:80: E501 line too long (96 > 79 characters)
+backend/storage/base.py:30:80: E501 line too long (93 > 79 characters)
+backend/storage/sync_worker.py:14:80: E501 line too long (84 > 79 characters)
+backend/storage/ucso_template.py:4:80: E501 line too long (83 > 79 characters)
+backend/websocket_manager.py:6:1: F401 'json' imported but unused
+backend/websocket_manager.py:7:1: F401 'asyncio' imported but unused

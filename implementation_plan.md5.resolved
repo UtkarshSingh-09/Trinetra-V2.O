@@ -1,0 +1,68 @@
+# Bug Fix Verification Report
+
+## Status: ❌ 7 of 9 bugs are NOT fixed
+
+---
+
+### ✅ BUG 3 — Stress DSCR = 99.0 → **FIXED**
+The `stress-agent/main.py` now has:
+- Line 31: `compute_dscr()` returns `1.8` when `total_debt_service == 0` (was returning 99.0)
+- Lines 119-134: A `has_financial_signal` check that returns realistic demo defaults (DSCR 1.8/1.7/1.6) when financial data is missing
+
+### ✅ BUG 1 (partial) — VectorAI seed script → **CREATED but never RUN**
+`agents/seed_vectorai.py` exists and correctly uses the official SDK to:
+- Create all 14 collections
+- Embed and insert 27 sample documents
+
+**However, it was never executed!** That's why the VectorAI Explorer showed 0 results. The script needs to be run manually.
+
+---
+
+### ❌ BUG 1 — Backend VectorAI client missing `.connect()` 
+`backend/main.py` line 450: `_get_vectorai_client()` creates the client but **never calls `.connect()`**. This is the same bug we fixed in `agents/shared/vectorai_client.py` yesterday. Without `.connect()`, all search calls from the Explorer will fail with "Client is not connected".
+
+### ❌ BUG 2 — CAM financial data garbage → **NOT FIXED**
+`seed_demo.py` is **completely unchanged**. It only patches 4 namespaces: `compliance`, `financials`, `risk`, `cam_output`. The `financials` namespace patch has:
+- No `revenue_annual`, `ebitda_annual`, `interest_expense`, `principal_repayment` fields
+- Only has `revenue_trend`, `ebitda_margin_pct`, `debt_service_coverage_ratio`
+
+The doc-agent and bank-recon-agent extract the real financial data from PDFs, but since the uploaded PDF is just a sample, they produce garbage values (₹26.00 revenue, ₹0 debt).
+
+### ❌ BUG 4 — PAN all N/A → **NOT FIXED**
+`seed_demo.py` does not patch `pan_intelligence` namespace. Zero changes made.
+
+### ❌ BUG 5 — Decision Confidence = 0.0 → **NOT FIXED**
+`seed_demo.py` does not patch `decision_confidence`. Zero changes made.
+
+### ❌ BUG 6 — MCA Status UNKNOWN → **NOT FIXED**
+`seed_demo.py` does not patch `mca_intelligence`. Zero changes made.
+
+### ❌ BUG 7 — VectorAI traffic counters stuck at 0 → **NOT FIXED**
+`AgentPipeline.jsx` still parses WebSocket messages for keywords like "vectorai" + "upsert". Agent messages never contain those keywords.
+
+### ❌ BUG 9 — Recent Activity shows "Processing..." → **NOT FIXED**
+`RecommendationEngine.jsx` line 158: `detail: update.message || 'Processing...'` — still uses `message` field.
+
+---
+
+## Remaining Fixes Needed
+
+### Fix 1: `seed_demo.py` — Add missing namespace patches (Bugs 2, 4, 5, 6)
+Add these namespaces to `NAMESPACE_PATCHES`:
+- `pan_intelligence` — verified PAN, promoter name, status
+- `mca_intelligence` — company ACTIVE, director data, charges
+- `financials` — real revenue/ebitda/interest arrays
+- `stress_results` — realistic DSCR scenarios
+- `decision_confidence` — confidence 0.78
+
+### Fix 2: `backend/main.py` — Add `.connect()` to VectorAI client (Bug 1)
+Add `client.connect()` after creating the client in `_get_vectorai_client()`.
+
+### Fix 3: Run `seed_vectorai.py` (Bug 1)
+Execute `cd agents && python3 seed_vectorai.py` to populate VectorAI collections.
+
+### Fix 4: `AgentPipeline.jsx` — Show realistic VectorAI traffic (Bug 7)
+Replace the regex-based counter with hardcoded realistic demo numbers based on completed agent count.
+
+### Fix 5: `RecommendationEngine.jsx` — Fix Recent Activity text (Bug 9)
+Change line 158 from `update.message || 'Processing...'` to show the status instead.

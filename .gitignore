@@ -28,12 +28,17 @@ ENV/
 
 # Environments
 .env
+.env.*
+!.env.example
+!**/.env.example
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+agents/.env
+backend/.env
 
 # Logs
 logs/
@@ -41,6 +46,16 @@ logs/
 backend.log
 agents.log
 watchdog.log
+agents/logs/
+backend/logs/
+
+# Runtime artifacts
+/tmp/
+*.pid
+*.sqlite3
+*.db
+*.jsonl
+*.bak
 
 # IDEs
 .idea/
@@ -57,3 +72,8 @@ watchdog.log
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Media files
+*.mov
+*.mp4
+frames/

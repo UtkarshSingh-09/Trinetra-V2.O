@@ -6,6 +6,13 @@
 
 cd /Users/utkarshsingh/Desktop/Trinetra
 
+# Prefer project virtualenv for consistent dependency resolution.
+if [ -x "/Users/utkarshsingh/Desktop/Trinetra/.venv/bin/python" ]; then
+    PYTHON_BIN="/Users/utkarshsingh/Desktop/Trinetra/.venv/bin/python"
+else
+    PYTHON_BIN="python3"
+fi
+
 if [ -f agents/.env ]; then
     set -a
     source agents/.env
@@ -24,7 +31,7 @@ mkdir -p logs
 
 start_backend() {
     if [ -f "backend/main.py" ]; then
-        python backend/main.py >> "logs/backend.log" 2>&1 &
+        "$PYTHON_BIN" backend/main.py >> "logs/backend.log" 2>&1 &
         PID_backend=$!
         echo "  🚀 Started backend (PID: $PID_backend)"
     else
@@ -37,7 +44,7 @@ start_agent() {
     local var_name="PID_${agent//-/_}"
     if [ -f "agents/$agent/main.py" ]; then
         cd agents
-        python "$agent/main.py" >> "logs/${agent}.log" 2>&1 &
+        "$PYTHON_BIN" "$agent/main.py" >> "logs/${agent}.log" 2>&1 &
         eval "$var_name=\$!"
         cd ..
         eval "echo \"  🚀 Started ${agent} (PID: \$$var_name)\""

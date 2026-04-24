@@ -1,12 +1,12 @@
 """
-Agent 7: Web Intelligence Agent
-Approach: True RAG (Retrieval-Augmented Generation) & NLP Sentiment
-Tools: weaviate-client, sentence-transformers (all-MiniLM-L6-v2), vaderSentiment
+Agent 6: Web Intelligence Agent
+Approach: RAG + Sentiment + External API fallback
+Tools: Actian VectorAI REST, sentence-transformers (all-MiniLM-L6-v2), vaderSentiment
 
 Trigger: gst_completed, bank_recon_completed
 Reads: applicant, gst_analysis
 Writes: web_intel
-Logic: Query Weaviate KB for news/litigation. Score with VADER sentiment.
+Logic: Query Actian VectorAI KB for news/litigation/RBI circulars. Score with VADER.
        Surepass eCourt API for litigation. Credibility filter ≥2.
 Errors: SCRAPE_TIMEOUT → use KB snapshot. LOW_CONFIDENCE (<0.75 cosine) → discard.
 """
@@ -16,16 +16,17 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
 
 import requests as http_requests
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-WEAVIATE_URL = os.getenv("WEAVIATE_URL", "http://weaviate:8080")
 SUREPASS_TOKEN = os.getenv("SUREPASS_TOKEN", "")
 SUREPASS_ECOURT_URL = "https://kyc-api.surepass.io/api/v1/ecourt/cnr-details"
 SIMILARITY_THRESHOLD = 0.75
 
 analyzer = SentimentIntensityAnalyzer()
+vectorai = VectorAIClient()
 
 
 # ── Sentiment Scoring (from Blueprint Section 2.4) ──
@@ -61,59 +62,34 @@ def aggregate_news_sentiment(articles: list) -> float:
     )
 
 
-# ── Weaviate RAG Queries ──
-def query_weaviate_collection(
-    collection: str, query_text: str, company_name: str, fields: list
-) -> list:
+# ── Actian VectorAI RAG Queries ──
+def query_actian_collection(
+    collection: str,
+    query_text: str,
+    top_k: int = 10,
+    min_score: float = SIMILARITY_THRESHOLD,
+) -> list[dict]:
     """
-    Query Weaviate using near_text semantic search.
-    Discards results below cosine similarity threshold (0.75).
+    Query Actian VectorAI and return metadata payloads.
     """
-    field_str = " ".join(fields)
-    query = {
-        "query": f"""{{
-            Get {{
-                {collection}(
-                    nearText: {{concepts: ["{query_text}", "{company_name}"]}}
-                    where: {{
-                        path: ["credibility_score"]
-                        operator: GreaterThan
-                        valueNumber: 2
-                    }}
-                    limit: 10
-                ) {{
-                    {field_str}
-                    _additional {{ certainty }}
-                }}
-            }}
-        }}"""
-    }
-
-    try:
-        resp = http_requests.post(
-            f"{WEAVIATE_URL}/v1/graphql", json=query, timeout=10
-        )
-        resp.raise_for_status()
-        hits = resp.json().get("data", {}).get("Get", {}).get(collection, [])
-
-        # Filter by similarity threshold
-        return [
-            h for h in hits
-            if h.get("_additional", {}).get("certainty", 0) >= SIMILARITY_THRESHOLD
-        ]
-    except Exception:
-        return []
+    results = vectorai.search(
+        collection=collection,
+        query_text=query_text,
+        top_k=top_k,
+        min_score=min_score,
+    )
+    return [r.get("metadata", {}) for r in results]
 
 
 def fetch_news(company_name: str, industry: str) -> list:
     """
-    Fetch and score news articles from Weaviate NewsArticle collection.
+    Fetch and score news articles from Actian VectorAI news_articles collection.
     """
-    hits = query_weaviate_collection(
-        "NewsArticle",
-        f"{company_name} {industry} risk",
-        company_name,
-        ["headline", "body", "source_url", "credibility_score", "published_at", "entity_tags"],
+    hits = query_actian_collection(
+        "news_articles",
+        f"{company_name} {industry} risk scandal fraud",
+        top_k=10,
+        min_score=0.70,
     )
 
     scored_news = []
@@ -137,7 +113,7 @@ def fetch_news(company_name: str, industry: str) -> list:
 def fetch_litigation(company_name: str, pan: str) -> list:
     """
     Fetch litigation records via Surepass eCourt API.
-    Falls back to Weaviate LitigationRecord collection.
+    Falls back to Actian VectorAI litigation_records collection.
     """
     records = []
 
@@ -171,12 +147,12 @@ def fetch_litigation(company_name: str, pan: str) -> list:
         except Exception:
             pass
 
-    # Fallback: Weaviate LitigationRecord collection
-    hits = query_weaviate_collection(
-        "LitigationRecord",
+    # Fallback: Actian litigation records collection
+    hits = query_actian_collection(
+        "litigation_records",
         company_name,
-        company_name,
-        ["case_no", "court", "case_type", "status", "severity", "source"],
+        top_k=10,
+        min_score=0.60,
     )
     for hit in hits:
         records.append({
@@ -193,13 +169,13 @@ def fetch_litigation(company_name: str, pan: str) -> list:
 
 def fetch_regulatory_flags(industry: str) -> list:
     """
-    Query Weaviate RBICircular collection for sector-specific headwinds.
+    Query Actian VectorAI rbi_circulars collection for sector-specific headwinds.
     """
-    hits = query_weaviate_collection(
-        "RBICircular",
-        f"{industry} regulation risk headwind",
-        industry,
-        ["circular_no", "title", "body", "issued_date", "sector_tags"],
+    hits = query_actian_collection(
+        "rbi_circulars",
+        f"{industry} regulation risk",
+        top_k=5,
+        min_score=0.60,
     )
 
     return [
@@ -220,7 +196,7 @@ class WebIntelligenceAgent(AgentBase):
 
     def process(self, application_id: str, ucso: dict) -> dict:
         """
-        Full RAG pipeline: query Weaviate for news, litigation, and RBI circulars.
+        Full RAG pipeline: query Actian VectorAI for news, litigation, and RBI circulars.
         Score sentiment using VADER. Return structured web intelligence.
         """
         applicant = ucso.get("applicant", {})
@@ -230,7 +206,7 @@ class WebIntelligenceAgent(AgentBase):
 
         # Fetch news with sentiment scoring
         self.logger.info(
-            f"Querying Weaviate for news about '{company_name}'",
+            f"Querying Actian VectorAI for news about '{company_name}'",
             extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
         )
         promoter_news = fetch_news(company_name, industry)
@@ -263,6 +239,24 @@ class WebIntelligenceAgent(AgentBase):
                 kb_freshness_hours = 9999
         else:
             kb_freshness_hours = 9999
+
+        web_summary = (
+            f"Web intel for {company_name}: {len(promoter_news)} articles, "
+            f"{len(litigation_records)} cases, "
+            f"sentiment={aggregate_news_sentiment(promoter_news)}"
+        )
+        vectorai.upsert(
+            collection="application_summaries",
+            doc_id=f"{application_id}_web_intel",
+            text=web_summary,
+            metadata={
+                "application_id": application_id,
+                "agent": self.AGENT_NAME,
+                "article_count": len(promoter_news),
+                "litigation_count": len(litigation_records),
+                "phase": "web_intel",
+            },
+        )
 
         return {
             "promoter_news": promoter_news,

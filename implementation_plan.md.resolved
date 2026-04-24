@@ -1,0 +1,137 @@
+# LLM-Powered CAM Report Generation via docxtpl
+
+Replace the current `python-docx` text-dump approach with a professional **LLM + Word Template** pipeline. The CAM agent will send the full UCSO to the Groq LLM, receive a structured JSON with all 85+ tags, and render them into the professionally designed `trinetra_cam_template.docx`.
+
+---
+
+## Root Cause
+
+The current `cam-agent/main.py` uses 300+ lines of manual `doc.add_paragraph()` and `doc.add_table()` calls that produce an ugly, unformatted document. It cannot produce executive summaries, business analysis, or any qualitative content.
+
+**After this fix:**
+```
+UCSO (all 13 agents) → Groq LLM → Structured JSON (85+ fields) → docxtpl → Beautiful .docx
+```
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **New dependency**: `docxtpl` (pure Python, no system deps). Will be added to `agents/requirements.txt`.
+
+> [!IMPORTANT]
+> **Groq API usage**: Each CAM generation will make **1 Groq API call** (~4000 tokens). This is within free-tier limits.
+
+> [!WARNING]
+> **Template file location**: The template `trinetra_cam_template.docx` must be placed at `agents/cam-agent/trinetra_cam_template.docx`. This file will be copied from the project root during setup.
+
+---
+
+## Proposed Changes
+
+### Dependency Update
+
+#### [MODIFY] [requirements.txt](file:///Users/utkarshsingh/Desktop/Trinetra/agents/requirements.txt)
+
+Add `docxtpl` to the CAM Agent section:
+```diff
+ # ── CAM Agent: Word Document Generation ──
+ python-docx>=1.1.0
++docxtpl>=0.18.0
+```
+
+---
+
+### Template File
+
+#### [NEW] [trinetra_cam_template.docx](file:///Users/utkarshsingh/Desktop/Trinetra/agents/cam-agent/trinetra_cam_template.docx)
+
+Copy the user's designed template from `Trinetra/trinetra_cam_template.docx` into the cam-agent directory. This is the 28-table, 85+ tag Word file.
+
+---
+
+### CAM Agent Rewrite
+
+#### [MODIFY] [main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/cam-agent/main.py)
+
+**What changes:**
+
+The entire `generate_cam_document()` function (lines 113–333, ~220 lines) will be replaced with a new implementation that has 3 phases:
+
+**Phase 1: Build UCSO Context (~30 lines)**
+- Extract all namespaces from the UCSO: `applicant`, `financials`, `derived_features`, `compliance`, `gst_analysis`, `bank_reconciliation`, `web_intel`, `mca_intelligence`, `pan_intelligence`, `risk`, `stress_results`, `bias_checks`, `pd_intelligence`
+- Build a compact JSON summary string (truncated to ~5000 chars to fit Groq context)
+
+**Phase 2: LLM Call to Groq (~40 lines)**
+- Send the UCSO summary to `llama3-70b-8192` with a structured prompt:
+  ```
+  You are a Senior Credit Analyst. Given the following UCSO data from 13 AI agents,
+  generate a JSON object with these exact keys: executive_summary, business_overview,
+  key_strengths, key_concerns, news_summary, litigation_summary, sector_headwinds,
+  rejection_reasons, corrective_actions, bias_summary, pd_transcript_summary, ...
+  
+  For numeric fields, format currencies in Indian notation (₹X.XX Cr).
+  For text fields, write 2-3 professional sentences.
+  ```
+- Parse the LLM's JSON response
+- Merge LLM-generated fields with direct UCSO data fields (numbers come from UCSO directly, prose comes from LLM)
+
+**Phase 3: Render Template (~20 lines)**
+- Load `trinetra_cam_template.docx` using `DocxTemplate`
+- Call `template.render(context)` with the merged context dictionary
+- Save to `/tmp/trinetra_cam/CAM_{application_id}.docx`
+
+**What stays the same:**
+- The `CAMGeneratorAgent` class (lines 336–443) stays completely unchanged — it handles the upload, retry logic, VectorAI upsert, and event publishing
+- The `format_inr()` helper stays (used for currency formatting)
+- The VectorAI integration stays
+
+**What gets removed:**
+- All `add_heading_styled()`, `add_kv_row()`, `find_evidence()` helpers
+- The entire manual `doc.add_paragraph()` / `doc.add_table()` document builder
+
+---
+
+## Data Flow
+
+```mermaid
+graph TD
+    A[UCSO - All 13 Agent Outputs] --> B[Phase 1: Extract & Compact]
+    B --> C[Phase 2: Groq LLM Call]
+    C --> D[LLM Returns JSON with 85+ keys]
+    D --> E[Merge: LLM prose + UCSO numbers]
+    E --> F[Phase 3: docxtpl.render]
+    F --> G[trinetra_cam_template.docx]
+    G --> H[Beautiful CAM_appId.docx]
+    H --> I[Upload to Backend]
+```
+
+---
+
+## Key Design Decisions
+
+1. **Numbers come from UCSO directly, not LLM** — We never let the LLM hallucinate financial numbers. Revenue, DSCR, risk scores etc. are extracted straight from the UCSO and formatted with `format_inr()`. The LLM only generates the qualitative text (summaries, analysis, recommendations).
+
+2. **Fallback if Groq fails** — If the LLM call fails (rate limit, timeout), we fill all text tags with sensible defaults like "Analysis pending" and still render the template with the hard numbers. The document will still be useful.
+
+3. **Template path** — The template is loaded relative to the agent's directory: `os.path.join(os.path.dirname(__file__), "trinetra_cam_template.docx")`.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+1. Install `docxtpl`: `pip install docxtpl`
+2. Copy template: `cp trinetra_cam_template.docx agents/cam-agent/`
+3. Restart agents: `./start_watchdog.sh`
+4. Upload a PDF via the Ingestion page
+5. Wait for all agents to complete → CAM agent triggers
+6. Download the generated CAM from Export CAM page
+
+### Manual Verification
+1. Open the generated `.docx` file
+2. Verify all 85+ tags are replaced with real data
+3. Verify executive summary reads like a professional credit officer wrote it
+4. Verify no `{{ tag }}` placeholders remain in the document
+5. Verify financial numbers match what the doc-agent extracted

@@ -1,0 +1,37 @@
+# 🎯 Integrate Official Actian VectorAI Beta SDK
+
+## Problem
+The hackathon provided an official beta repository (`actian-vectorAI-db-beta`). Our current implementation uses a generic REST client on port `5480` with mock keys. However, the official beta uses:
+1. A new Docker container (`williamimoh/actian-vectorai-db:latest`) exposing gRPC on port `50051`.
+2. A required Python wheel SDK (`actian_vectorai-0.1.0b2-py3-none-any.whl`).
+3. **No API keys for local runtime**. (This answers your original question: you don't need any keys!)
+
+## Proposed Changes
+
+> [!IMPORTANT]
+> The goal is to update the underlying `shared.vectorai_client` wrapper *without* breaking the 14 agents that already depend on it.
+
+### [MODIFY] `docker-compose.vectorai.yml`
+Update to the official Hackathon Beta container:
+- Image: `williamimoh/actian-vectorai-db:latest`
+- Port: `50051:50051`
+
+### [MODIFY] `.env` files (Root, Backend, Agents)
+- Remove `VECTORAI_API_KEY` (no longer needed for the beta)
+- Change `VECTORAI_URL` to `localhost:50051`
+
+### [NEW] Install Beta SDK
+Install the provided wheel into your environment:
+```bash
+pip install /tmp/actian-beta-repo/actian_vectorai-0.1.0b2-py3-none-any.whl
+```
+
+### [MODIFY] `agents/shared/vectorai_client.py`
+Rewrite our custom wrapper to use the new `actian_vectorai` sync client. We will maintain our `embed`, `upsert`, and `search` method signatures so the 14 agents don't break.
+- `create_collection`: Use `client.collections.create()` with `VectorParams(size=384, distance=Distance.Cosine)`
+- `upsert_raw`: Map our data to `PointStruct(id=uuid, vector=emb, payload=metadata)` and use `client.points.upsert()`
+- `search_raw`: Use `client.points.search()` and format the output back to our expected `[{"id": x, "score": y, "metadata": z}]` shape
+- `hybrid_search`: They provided a `FilterBuilder` DSL, we will map our SQL filters to this DSL.
+
+## Open Questions
+- Do you want me to proceed with this integration right now? Once completed, your app will be 100% compliant with the hackathon's exact beta tech stack!

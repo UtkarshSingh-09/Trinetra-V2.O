@@ -15,8 +15,12 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
 
 import networkx as nx
+
+
+vectorai = VectorAIClient()
 
 
 def compute_itc_discrepancy(gst_2b_data: dict, gst_3b_data: dict) -> dict:
@@ -154,6 +158,43 @@ class GSTReconciliationAgent(AgentBase):
             status = "WARNING"
         else:
             status = "OK"
+
+        gst_summary = (
+            f"GST reconciliation: discrepancy={itc_result['discrepancy_pct']}%, "
+            f"circular_trade_index={circular_result['circular_trade_index']}, "
+            f"cycles={len(circular_result['suspicious_cycles'])}, status={status}"
+        )
+        vectorai.upsert(
+            collection="gst_patterns",
+            doc_id=f"{application_id}_gst",
+            text=gst_summary,
+            metadata={
+                "application_id": application_id,
+                "agent": self.AGENT_NAME,
+                "discrepancy_pct": itc_result["discrepancy_pct"],
+                "circular_trade_index": circular_result["circular_trade_index"],
+                "status": status,
+            },
+        )
+
+        if status in ("FLAG", "WARNING"):
+            similar_fraud = vectorai.search(
+                collection="gst_patterns",
+                query_text=f"high GST discrepancy circular trading fraud {status}",
+                top_k=5,
+                min_score=0.65,
+            )
+            flagged_matches = [
+                r
+                for r in similar_fraud
+                if r.get("metadata", {}).get("application_id") != application_id
+                and r.get("metadata", {}).get("status") in ("FLAG", "WARNING")
+            ]
+            if flagged_matches:
+                self.logger.warning(
+                    f"GST pattern matches {len(flagged_matches)} previously flagged applications",
+                    extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
+                )
 
         return {
             "gstr2b_vs_3b_discrepancy_pct": itc_result["discrepancy_pct"],

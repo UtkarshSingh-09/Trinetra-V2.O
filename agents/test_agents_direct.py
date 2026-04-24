@@ -28,10 +28,10 @@ SAMPLE_UCSO = {
     "compliance": {},
     "documents": {
         "files": [
-            {"doc_type": "ANNUAL_REPORT", "s3_key": "test/annual_report.pdf", "status": "UPLOADED"},
-            {"doc_type": "BANK_STMT", "s3_key": "test/bank_stmt.pdf", "status": "UPLOADED"},
-            {"doc_type": "GST_RETURN", "s3_key": "test/gst_return.pdf", "status": "UPLOADED"},
-            {"doc_type": "ITR", "s3_key": "test/itr.pdf", "status": "UPLOADED"},
+            {"type": "ANNUAL_REPORT", "s3_key": "test/annual_report.pdf", "status": "UPLOADED"},
+            {"type": "BANK_STMT", "s3_key": "test/bank_stmt.pdf", "status": "UPLOADED"},
+            {"type": "GST_RETURN", "s3_key": "test/gst_return.pdf", "status": "UPLOADED"},
+            {"type": "ITR", "s3_key": "test/itr.pdf", "status": "UPLOADED"},
         ]
     },
     "financials": {
@@ -168,7 +168,7 @@ def test_1_compliance():
     ucso = SAMPLE_UCSO.copy()
     files = ucso["documents"]["files"]
     required = {"ANNUAL_REPORT", "BANK_STMT", "GST_RETURN", "ITR"}
-    uploaded = {f["doc_type"] for f in files if f.get("status") == "UPLOADED"}
+    uploaded = {f.get("type") for f in files if f.get("status") == "UPLOADED"}
     missing = required - uploaded
     result = {
         "status": "PASSED" if not missing else "FAILED",

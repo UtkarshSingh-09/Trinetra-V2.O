@@ -18,6 +18,7 @@ from collections import defaultdict
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
 
 
 # Circuit breaker config
@@ -25,6 +26,9 @@ MAX_EVENT_REPEATS = 3
 KB_STALENESS_THRESHOLD_HOURS = 168  # 1 week
 CONFIDENCE_ALERT_THRESHOLD = 0.5
 DRIFT_THRESHOLD = 0.15  # 15% score drift
+
+
+vectorai = VectorAIClient()
 
 
 class MonitorAgent(AgentBase):
@@ -122,7 +126,7 @@ class MonitorAgent(AgentBase):
                 "timestamp": now,
             })
             self.logger.warning(
-                f"KB_STALE: Weaviate data is {kb_hours}h old for {application_id}",
+                f"KB_STALE: Actian VectorAI data is {kb_hours}h old for {application_id}",
                 extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
             )
 
@@ -188,6 +192,47 @@ class MonitorAgent(AgentBase):
                 f"Health check for {application_id}: all clear",
                 extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
             )
+
+        audit_text = (
+            f"Health check for {application_id}: {len(alerts)} alerts. "
+            f"Types: {[a['type'] for a in alerts]}"
+        )
+        vectorai.upsert(
+            collection="audit_events",
+            doc_id=f"{application_id}_audit_{now.replace(':', '').replace('-', '')}",
+            text=audit_text,
+            metadata={
+                "application_id": application_id,
+                "agent": self.AGENT_NAME,
+                "alert_count": len(alerts),
+                "alert_types": [a["type"] for a in alerts],
+            },
+        )
+
+        if alerts:
+            similar_alerts = vectorai.search(
+                collection="audit_events",
+                query_text=audit_text,
+                top_k=5,
+                min_score=0.80,
+            )
+            for match in similar_alerts:
+                match_meta = match.get("metadata", {})
+                if (
+                    match_meta.get("application_id") != application_id
+                    and match_meta.get("alert_count", 0) > 3
+                ):
+                    alerts.append(
+                        {
+                            "type": "PATTERN_MATCH",
+                            "severity": "HIGH",
+                            "message": (
+                                f"Processing pattern {match.get('score', 0):.0%} similar to "
+                                f"flagged application {match_meta.get('application_id', '')[:8]}..."
+                            ),
+                            "timestamp": now,
+                        }
+                    )
 
         return {"entries": audit_entries, "latest_check": new_entry, "alert_count": len(alerts)}
 

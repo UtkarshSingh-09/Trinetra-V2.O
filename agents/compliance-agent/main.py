@@ -15,6 +15,10 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
+
+
+vectorai = VectorAIClient()
 
 
 REQUIRED_DOC_TYPES = ["ANNUAL_REPORT", "BANK_STMT", "GST_RETURN", "ITR"]
@@ -77,6 +81,43 @@ class ComplianceAgent(AgentBase):
                 "missing_documents": missing,
             })
             self.publish_status(application_id, "COMPLETED", error_code="DOCS_MISSING")
+            pan = ucso.get("applicant", {}).get("pan", "")
+            company = ucso.get("applicant", {}).get("company_name", "")
+            compliance_text = (
+                f"Compliance check for {company} (PAN: {pan}). "
+                f"Status: FAIL. Missing: {missing}"
+            )
+            vectorai.upsert(
+                collection="application_summaries",
+                doc_id=f"{application_id}_compliance",
+                text=compliance_text,
+                metadata={
+                    "application_id": application_id,
+                    "pan": pan,
+                    "agent": self.AGENT_NAME,
+                    "status": "FAIL",
+                    "phase": "compliance",
+                },
+            )
+            if pan:
+                prior = vectorai.hybrid_search(
+                    collection="application_summaries",
+                    query_text=f"compliance check PAN {pan}",
+                    filters={"pan": pan, "phase": "compliance"},
+                    top_k=3,
+                )
+                prior_count = len(
+                    [
+                        r
+                        for r in prior
+                        if r.get("metadata", {}).get("application_id") != application_id
+                    ]
+                )
+                if prior_count > 0:
+                    self.logger.info(
+                        f"Found {prior_count} prior applications from PAN {pan}",
+                        extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
+                    )
             return {
                 "status": "FAIL",
                 "missing_documents": missing,
@@ -88,6 +129,43 @@ class ComplianceAgent(AgentBase):
                 extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
             )
             self.publish_event("compliance_passed", application_id)
+            pan = ucso.get("applicant", {}).get("pan", "")
+            company = ucso.get("applicant", {}).get("company_name", "")
+            compliance_text = (
+                f"Compliance check for {company} (PAN: {pan}). "
+                "Status: PASS. Missing: []"
+            )
+            vectorai.upsert(
+                collection="application_summaries",
+                doc_id=f"{application_id}_compliance",
+                text=compliance_text,
+                metadata={
+                    "application_id": application_id,
+                    "pan": pan,
+                    "agent": self.AGENT_NAME,
+                    "status": "PASS",
+                    "phase": "compliance",
+                },
+            )
+            if pan:
+                prior = vectorai.hybrid_search(
+                    collection="application_summaries",
+                    query_text=f"compliance check PAN {pan}",
+                    filters={"pan": pan, "phase": "compliance"},
+                    top_k=3,
+                )
+                prior_count = len(
+                    [
+                        r
+                        for r in prior
+                        if r.get("metadata", {}).get("application_id") != application_id
+                    ]
+                )
+                if prior_count > 0:
+                    self.logger.info(
+                        f"Found {prior_count} prior applications from PAN {pan}",
+                        extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
+                    )
             return {
                 "status": "PASS",
                 "missing_documents": [],

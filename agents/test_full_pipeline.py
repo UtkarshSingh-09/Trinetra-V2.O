@@ -40,10 +40,10 @@ APPLICATION = {
     # Documents uploaded by the borrower
     "documents": {
         "files": [
-            {"doc_type": "ANNUAL_REPORT", "s3_key": "utkarsh/annual_report_2025.pdf", "status": "UPLOADED"},
-            {"doc_type": "BANK_STMT", "s3_key": "utkarsh/hdfc_stmt_12m.pdf", "status": "UPLOADED"},
-            {"doc_type": "GST_RETURN", "s3_key": "utkarsh/gstr_3b_2025.pdf", "status": "UPLOADED"},
-            {"doc_type": "ITR", "s3_key": "utkarsh/itr_2025.pdf", "status": "UPLOADED"},
+            {"type": "ANNUAL_REPORT", "s3_key": "utkarsh/annual_report_2025.pdf", "status": "UPLOADED"},
+            {"type": "BANK_STMT", "s3_key": "utkarsh/hdfc_stmt_12m.pdf", "status": "UPLOADED"},
+            {"type": "GST_RETURN", "s3_key": "utkarsh/gstr_3b_2025.pdf", "status": "UPLOADED"},
+            {"type": "ITR", "s3_key": "utkarsh/itr_2025.pdf", "status": "UPLOADED"},
         ]
     },
 
@@ -128,7 +128,7 @@ def run_pipeline():
     banner(1, "Compliance Agent", "application_created")
     files = ucso["documents"]["files"]
     required = {"ANNUAL_REPORT", "BANK_STMT", "GST_RETURN", "ITR"}
-    uploaded = {f["doc_type"] for f in files if f.get("status") == "UPLOADED"}
+    uploaded = {f.get("type") for f in files if f.get("status") == "UPLOADED"}
     missing = required - uploaded
     ucso["compliance"] = {
         "status": "PASSED" if not missing else "FAILED",
@@ -367,15 +367,16 @@ def run_pipeline():
 
     scenarios = []
     configs = [
-        ("Revenue -20%", -0.20, 0.0),
-        ("Rate +2%", 0.0, 0.02),
-        ("Combined", -0.20, 0.02),
+        ("Revenue -20%", -0.20, 0),
+        ("Rate +2%", 0.0, 200),
+        ("Combined", -0.20, 200),
     ]
-    for name, rev_shock, rate_shock in configs:
+    for name, rev_shock, rate_shock_bps in configs:
+        op_expenses = max(0, revenue - ebitda)
         dscr = stress_mod.compute_stressed_dscr(
-            revenue, ebitda_margin, fin["interest_expense"],
+            revenue, op_expenses, fin["interest_expense"],
             fin.get("principal_repayment", 0),
-            revenue_shock=rev_shock, rate_shock_pct=rate_shock,
+            revenue_shock=rev_shock, rate_shock_bps=rate_shock_bps,
         )
         verdict = stress_mod.assign_stress_verdict(dscr)
         scenarios.append({"name": name, "dscr": dscr, "verdict": verdict})

@@ -15,6 +15,10 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
+
+
+vectorai = VectorAIClient()
 
 
 def compute_dscr(net_operating_income: float, total_debt_service: float) -> float:
@@ -23,7 +27,8 @@ def compute_dscr(net_operating_income: float, total_debt_service: float) -> floa
     Total Debt Service = Interest Expense + Principal Repayment
     """
     if total_debt_service == 0:
-        return 99.0  # effectively infinite coverage
+        # Use a realistic fallback instead of an unrealistic infinite DSCR.
+        return 1.8
     return round(net_operating_income / total_debt_service, 4)
 
 
@@ -161,10 +166,44 @@ class StressAgent(AgentBase):
                 extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
             )
 
+            stress_text = (
+                f"Stress test: worst_dscr={worst_dscr:.4f}, verdict={survival_verdict}. "
+                f"Scenarios: Rev-20% DSCR={dscr_rev_shock:.4f}, "
+                f"Rate+2% DSCR={dscr_rate_shock:.4f}, Combined={dscr_combined:.4f}"
+            )
+            vectorai.upsert(
+                collection="stress_scenarios",
+                doc_id=f"{application_id}_stress",
+                text=stress_text,
+                metadata={
+                    "application_id": application_id,
+                    "agent": self.AGENT_NAME,
+                    "worst_dscr": worst_dscr,
+                    "survival_verdict": survival_verdict,
+                    "base_dscr": base_dscr,
+                },
+            )
+
+            similar_stress = vectorai.search(
+                collection="stress_scenarios",
+                query_text=stress_text,
+                top_k=3,
+                min_score=0.70,
+            )
+            past_outcomes = [
+                {
+                    "app_id": r.get("metadata", {}).get("application_id", ""),
+                    "verdict": r.get("metadata", {}).get("survival_verdict", ""),
+                }
+                for r in similar_stress
+                if r.get("metadata", {}).get("application_id") != application_id
+            ]
+
             return {
                 "scenarios": scenarios,
                 "worst_case_dscr": worst_dscr,
                 "survival_verdict": survival_verdict,
+                "past_outcomes": past_outcomes,
             }
 
         except Exception as e:

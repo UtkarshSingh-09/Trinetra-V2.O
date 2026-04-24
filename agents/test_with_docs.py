@@ -202,7 +202,7 @@ def run_pipeline(inputs):
     # Add document entries
     for doc_type, path in inputs["docs"].items():
         ucso["documents"]["files"].append({
-            "doc_type": doc_type,
+            "type": doc_type,
             "local_path": path,
             "status": "UPLOADED",
         })
@@ -210,7 +210,7 @@ def run_pipeline(inputs):
     # ── STEP 1: Compliance ──
     banner(1, "Compliance Agent", "application_created")
     required = {"ANNUAL_REPORT", "BANK_STMT", "GST_RETURN", "ITR"}
-    uploaded = {f["doc_type"] for f in ucso["documents"]["files"]}
+    uploaded = {f.get("type") for f in ucso["documents"]["files"]}
     missing = required - uploaded
     all_present = len(missing) == 0
 

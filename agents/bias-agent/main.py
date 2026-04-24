@@ -15,6 +15,10 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
+
+
+vectorai = VectorAIClient()
 
 
 # Indian national medians for key financial features (heuristic baselines)
@@ -137,6 +141,32 @@ class BiasAgent(AgentBase):
                             contribution / max(original_score, 0.01) * 100, 2
                         ),
                     })
+
+            bias_text = (
+                f"Bias check: {len(flip_features)} flips, {len(overweight_flags)} overweights. "
+                f"Original decision: {original_decision}"
+            )
+            vectorai.upsert(
+                collection="application_summaries",
+                doc_id=f"{application_id}_bias",
+                text=bias_text,
+                metadata={
+                    "application_id": application_id,
+                    "agent": self.AGENT_NAME,
+                    "flip_count": len(flip_features),
+                    "overweight_count": len(overweight_flags),
+                    "original_decision": original_decision,
+                    "phase": "bias",
+                },
+            )
+
+            if flip_features:
+                vectorai.hybrid_search(
+                    collection="application_summaries",
+                    query_text="bias decision flip counterfactual overweight",
+                    filters={"phase": "bias"},
+                    top_k=5,
+                )
 
             return {
                 "counterfactual_tested": True,

@@ -1,0 +1,119 @@
+# Trinetra × Actian VectorAI Integration — Audit Report
+
+## Summary
+
+The implementation has been **partially completed** but has **critical bugs in 10 out of 14 agents** that will crash them on startup. The shared infrastructure is solid, but the agent modifications have systemic indentation errors and missing imports.
+
+---
+
+## ✅ What Was Done Correctly
+
+| Item | Status | Notes |
+|---|---|---|
+| `agents/shared/vectorai_client.py` | ✅ Perfect | 172 lines, all 7 methods implemented correctly |
+| `agents/shared/__init__.py` | ✅ Perfect | Exports `VectorAIClient` |
+| `docker-compose.vectorai.yml` | ✅ Perfect | Correct ports, volumes, API key |
+| `agents/seed_vectorai.py` | ✅ Good | Creates all 14 collections, seeds sample data |
+| Web Agent (Weaviate → Actian) | ✅ Correct logic | Full rewrite, but has indentation bug (see below) |
+| Doc Agent (chunking + embed) | ✅ Correct logic | chunk_text() added, batch upsert, but has indentation bug |
+| MCA Agent (Weaviate → Actian) | ✅ Correct logic | `fetch_from_actian_vectorai()` added, but indentation bug |
+
+---
+
+## 🔴 Critical Bugs Found
+
+### Bug 1: Missing `import` + `vectorai = VectorAIClient()` in 11 agents
+
+Only **3 agents** (web, doc, mca) have the proper import line. The remaining **11 agents** have `vectorai.upsert()` calls but **never imported VectorAIClient or created the `vectorai` variable**. They will crash with `NameError: name 'vectorai' is not defined`.
+
+**Affected agents:**
+| Agent | Has `import VectorAIClient`? | Has `vectorai = VectorAIClient()`? | Has `vectorai.upsert()` calls? |
+|---|---|---|---|
+| compliance-agent | ❌ | ❌ | ✅ (lines 81, 93) |
+| gst-agent | ❌ | ❌ | ✅ (lines 36, 48) |
+| bank-recon-agent | ❌ | ❌ | ✅ (lines 139, 151) |
+| pan-agent | ❌ | ❌ | ✅ (lines 67, 79) |
+| pd-agent | ❌ | ❌ | ✅ (lines 76, 87) |
+| model-selector-agent | ❌ | ❌ | ✅ (lines 111, 124) |
+| risk-agent | ❌ | ❌ | ✅ (lines 154, 174, 191, 246) |
+| bias-agent | ❌ | ❌ | ✅ (lines 142, 154) |
+| stress-agent | ❌ | ❌ | ✅ (lines 165, 178) |
+| cam-agent | ❌ | ❌ | ✅ (lines 279, 291) |
+| monitor-agent | ❌ | ❌ | ✅ (lines 193, 205) |
+
+---
+
+### Bug 2: IndentationError in 8 agents (Fatal — won't start)
+
+Python `py_compile` confirmed these agents have **syntax errors** that will crash them:
+
+| Agent | Error | Line |
+|---|---|---|
+| doc-agent | `IndentationError: unexpected indent` | Line 340 |
+| gst-agent | `IndentationError: unexpected indent` | Line 36 |
+| mca-agent | `IndentationError: unexpected indent` | Line 127 |
+| web-agent | `IndentationError: unexpected indent` | Line 244 |
+| pan-agent | `IndentationError: unexpected indent` | Line 67 |
+| model-selector-agent | `IndentationError: unexpected indent` | Line 111 |
+| risk-agent | `IndentationError: unexpected indent` | Line 154 |
+| bias-agent | `IndentationError: unexpected indent` | Line 84 (!) |
+
+> [!CAUTION]
+> These 8 agents will **not start at all**. The watchdog will show them dying and restarting in an infinite loop.
+
+---
+
+### Bug 3: Compliance Agent missing `return` for the `else` branch
+
+The compliance agent's `else` branch (lines 109-115) is truncated — it never returns anything for the PASS case. The file just ends abruptly at line 115.
+
+---
+
+### Bug 4: Duplicate `vectorai.upsert()` blocks
+
+In `compliance-agent/main.py`, lines 81-90 and lines 93-102 contain **identical** upsert calls — one after the other. The second one (lines 93-102) appears to be a copy-paste artefact. It's also indented inside the `if missing:` block but was probably meant for the `else` branch.
+
+---
+
+### Bug 5: Web Agent indentation at line 243-255
+
+The `web_summary` variable is constructed at top-level indentation (line 239), but the `vectorai.upsert()` call on line 244 is indented with extra spaces, putting it inside an inconsistent block. The `return` statement on line 257 is also at wrong indentation.
+
+---
+
+### Bug 6: Doc Agent indentation at line 339-349
+
+The `fin_summary` line (339) is at proper indentation, but `vectorai.upsert()` on line 340 has an extra indent, and the `return {"files": updated_files}` on line 351 is also inside the `if aggregated_financials` block — meaning it **won't return anything if there are no financials**.
+
+---
+
+## 📊 Agents That Compile Successfully (Only 3)
+
+| Agent | Compiles? |
+|---|---|
+| stress-agent | ✅ |
+| cam-agent | ✅ |
+| monitor-agent | ✅ |
+
+> [!WARNING]
+> Even these 3 will crash at **runtime** because they call `vectorai.upsert()` without ever importing or instantiating `VectorAIClient`.
+
+---
+
+## 🔧 What Needs To Be Fixed
+
+1. **Add imports to all 11 agents** — each needs:
+   ```python
+   from shared.vectorai_client import VectorAIClient
+   vectorai = VectorAIClient()
+   ```
+
+2. **Fix indentation errors in 8 agents** — the `vectorai.upsert()` blocks were injected with wrong indentation
+
+3. **Fix compliance-agent** — restore the `else` branch return and remove the duplicate upsert
+
+4. **Fix doc-agent** — move the `return` statement outside the `if aggregated_financials` block
+
+5. **Fix web-agent** — correct indentation of the upsert + return block
+
+6. **Fix mca-agent** — correct indentation inside `fetch_from_actian_vectorai()` and `process()` method

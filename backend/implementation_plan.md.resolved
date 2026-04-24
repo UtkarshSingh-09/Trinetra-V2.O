@@ -1,0 +1,1184 @@
+# Trinetra × Actian VectorAI — Complete Integration Plan
+
+## 1. Problem Statement
+
+Trinetra currently stores all data as local JSON files via `ActianStorageAdapter` in [actian_adapter.py](file:///Users/utkarshsingh/Desktop/Trinetra/backend/storage/actian_adapter.py). A background `EdgeCloudSyncWorker` optionally POSTs event logs to a cloud URL. **Actian is not used for any computation, querying, or intelligence — it's a passive dump target.**
+
+Additionally, 3 agents currently depend on **Weaviate** (a competitor vector database) for semantic search:
+- [web-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/web-agent/main.py) — queries `NewsArticle`, `LitigationRecord`, `RBICircular` collections
+- [mca-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/mca-agent/main.py) — queries `MCAFiling` collection as fallback
+- Config: `WEAVIATE_URL=http://weaviate:8080` in `.env`
+
+**Goal:** Replace Weaviate with Actian VectorAI, and make every agent store + query Actian natively.
+
+---
+
+## 2. Infrastructure Setup
+
+### 2.1 Run Actian VectorAI via Docker
+
+```bash
+# In project root, create docker-compose.vectorai.yml
+docker-compose -f docker-compose.vectorai.yml up -d
+```
+
+```yaml
+# docker-compose.vectorai.yml
+version: '3.8'
+services:
+  vectorai:
+    image: actian/vectorai:latest
+    ports:
+      - "5480:5480"    # REST API
+      - "5481:5481"    # gRPC (if supported)
+    volumes:
+      - vectorai_data:/data
+    environment:
+      - VECTORAI_API_KEY=trinetra-local-dev-key
+    restart: unless-stopped
+
+volumes:
+  vectorai_data:
+```
+
+### 2.2 Environment Variable Updates
+
+#### [agents/.env](file:///Users/utkarshsingh/Desktop/Trinetra/agents/.env) — Add:
+```env
+# Actian VectorAI (replaces Weaviate)
+VECTORAI_URL=http://localhost:5480
+VECTORAI_API_KEY=trinetra-local-dev-key
+VECTORAI_EMBEDDING_MODEL=all-MiniLM-L6-v2
+VECTORAI_EMBEDDING_DIM=384
+```
+
+#### [backend/.env](file:///Users/utkarshsingh/Desktop/Trinetra/backend/.env) — Add:
+```env
+VECTORAI_URL=http://localhost:5480
+VECTORAI_API_KEY=trinetra-local-dev-key
+```
+
+### 2.3 New Dependency
+
+#### [agents/requirements.txt](file:///Users/utkarshsingh/Desktop/Trinetra/agents/requirements.txt) — Add:
+```
+# ── Actian VectorAI ──
+actian-vectorai>=1.0.0
+```
+
+> [!NOTE]
+> If the `actian-vectorai` pip package doesn't exist, we will use the **REST API directly** via `requests`. The VectorAI Docker container exposes a REST endpoint. This is actually _better_ for the demo because it shows raw HTTP integration, not an SDK abstraction.
+
+---
+
+## 3. Shared VectorAI Client
+
+### [NEW] `agents/shared/vectorai_client.py`
+
+This is the **single most important new file**. Every agent imports this.
+
+```python
+"""
+Trinetra × Actian VectorAI Client
+Shared client for all 14 agents to store and query vector embeddings.
+Replaces Weaviate entirely.
+"""
+import os
+import json
+import uuid
+import requests
+from datetime import datetime, timezone
+from sentence_transformers import SentenceTransformer
+
+from .logger import get_logger
+
+logger = get_logger("vectorai-client")
+
+VECTORAI_URL = os.getenv("VECTORAI_URL", "http://localhost:5480")
+VECTORAI_API_KEY = os.getenv("VECTORAI_API_KEY", "")
+EMBEDDING_MODEL = os.getenv("VECTORAI_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+EMBEDDING_DIM = int(os.getenv("VECTORAI_EMBEDDING_DIM", "384"))
+
+# Lazy-load the model (shared across all agents in same process)
+_model = None
+
+def _get_model():
+    global _model
+    if _model is None:
+        _model = SentenceTransformer(EMBEDDING_MODEL)
+    return _model
+
+
+class VectorAIClient:
+    """
+    Client for Actian VectorAI DB.
+    Provides: embed → upsert → search → hybrid_search
+    """
+
+    def __init__(self):
+        self.base_url = VECTORAI_URL.rstrip("/")
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {VECTORAI_API_KEY}",
+        }
+
+    # ── Embedding ──
+
+    def embed(self, text: str) -> list[float]:
+        """Generate a 384-dimensional embedding using SentenceTransformer."""
+        model = _get_model()
+        return model.encode(text).tolist()
+
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        """Batch embed multiple texts."""
+        model = _get_model()
+        return model.encode(texts).tolist()
+
+    # ── Collection Management ──
+
+    def create_collection(self, name: str, metadata_schema: dict = None):
+        """Create a vector collection if it doesn't exist."""
+        payload = {
+            "name": name,
+            "dimension": EMBEDDING_DIM,
+            "distance_metric": "cosine",
+            "metadata_schema": metadata_schema or {},
+        }
+        try:
+            resp = requests.post(
+                f"{self.base_url}/api/v1/collections",
+                headers=self.headers,
+                json=payload,
+                timeout=10,
+            )
+            if resp.status_code in (200, 201, 409):  # 409 = already exists
+                return True
+            resp.raise_for_status()
+        except Exception as e:
+            logger.error(f"Failed to create collection '{name}': {e}")
+            return False
+
+    # ── Upsert ──
+
+    def upsert(self, collection: str, doc_id: str, text: str, metadata: dict = None):
+        """Embed text and store in Actian VectorAI with metadata."""
+        embedding = self.embed(text)
+        return self.upsert_raw(collection, doc_id, embedding, metadata or {})
+
+    def upsert_raw(self, collection: str, doc_id: str, embedding: list[float], metadata: dict):
+        """Store a pre-computed embedding in Actian VectorAI."""
+        payload = {
+            "id": doc_id,
+            "vector": embedding,
+            "metadata": {
+                **metadata,
+                "indexed_at": datetime.now(timezone.utc).isoformat(),
+            },
+        }
+        try:
+            resp = requests.post(
+                f"{self.base_url}/api/v1/collections/{collection}/documents",
+                headers=self.headers,
+                json=payload,
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return True
+        except Exception as e:
+            logger.error(f"VectorAI upsert failed [{collection}/{doc_id}]: {e}")
+            return False
+
+    def upsert_batch(self, collection: str, documents: list[dict]):
+        """
+        Batch upsert multiple documents.
+        Each document: {"id": str, "text": str, "metadata": dict}
+        """
+        texts = [d["text"] for d in documents]
+        embeddings = self.embed_batch(texts)
+
+        payload = {
+            "documents": [
+                {
+                    "id": d["id"],
+                    "vector": emb,
+                    "metadata": {
+                        **d.get("metadata", {}),
+                        "indexed_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                }
+                for d, emb in zip(documents, embeddings)
+            ]
+        }
+        try:
+            resp = requests.post(
+                f"{self.base_url}/api/v1/collections/{collection}/documents/batch",
+                headers=self.headers,
+                json=payload,
+                timeout=30,
+            )
+            resp.raise_for_status()
+            return True
+        except Exception as e:
+            logger.error(f"VectorAI batch upsert failed [{collection}]: {e}")
+            return False
+
+    # ── Search ──
+
+    def search(self, collection: str, query_text: str, top_k: int = 5, min_score: float = 0.0) -> list[dict]:
+        """
+        Semantic vector search using cosine similarity in Actian VectorAI.
+        
+        Returns list of: {"id": str, "score": float, "metadata": dict}
+        """
+        query_embedding = self.embed(query_text)
+        return self.search_raw(collection, query_embedding, top_k, min_score)
+
+    def search_raw(self, collection: str, query_vector: list[float], top_k: int = 5, min_score: float = 0.0) -> list[dict]:
+        """Search with a pre-computed query vector."""
+        payload = {
+            "vector": query_vector,
+            "top_k": top_k,
+            "min_score": min_score,
+        }
+        try:
+            resp = requests.post(
+                f"{self.base_url}/api/v1/collections/{collection}/search",
+                headers=self.headers,
+                json=payload,
+                timeout=10,
+            )
+            resp.raise_for_status()
+            results = resp.json().get("results", [])
+            return results
+        except Exception as e:
+            logger.error(f"VectorAI search failed [{collection}]: {e}")
+            return []
+
+    def hybrid_search(self, collection: str, query_text: str, filters: dict, top_k: int = 5) -> list[dict]:
+        """
+        Actian's KILLER FEATURE: Vector similarity + SQL-style metadata filtering.
+        
+        Example filters: {"industry": "Manufacturing", "risk_band": "HIGH"}
+        This combines semantic search with structured data queries — 
+        something Weaviate does but Actian does natively with SQL.
+        """
+        query_embedding = self.embed(query_text)
+        payload = {
+            "vector": query_embedding,
+            "top_k": top_k,
+            "filters": filters,  # SQL-style WHERE clauses
+        }
+        try:
+            resp = requests.post(
+                f"{self.base_url}/api/v1/collections/{collection}/search",
+                headers=self.headers,
+                json=payload,
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return resp.json().get("results", [])
+        except Exception as e:
+            logger.error(f"VectorAI hybrid search failed [{collection}]: {e}")
+            return []
+```
+
+### [MODIFY] `agents/shared/__init__.py`
+
+Add the new import:
+```python
+from .vectorai_client import VectorAIClient
+```
+
+---
+
+## 4. Actian VectorAI Collections Schema
+
+| # | Collection Name | Dimension | Written By | Queried By | Purpose |
+|---|---|---|---|---|---|
+| 1 | `document_chunks` | 384 | Doc Agent | CAM Agent, Risk Agent | Chunked PDF paragraphs for semantic evidence retrieval |
+| 2 | `financial_profiles` | 384 | Doc Agent | Risk Agent, Bias Agent, Model Selector | Vectorized financial snapshots for similar-case lookup |
+| 3 | `gst_patterns` | 384 | GST Agent | GST Agent, Monitor Agent | Embedded GST summaries for fraud pattern matching |
+| 4 | `bank_recon_profiles` | 384 | Bank Recon Agent | Risk Agent, Monitor Agent | Reconciliation pattern fingerprints |
+| 5 | `news_articles` | 384 | Web Agent (seed) | Web Agent | **Replaces Weaviate `NewsArticle`** |
+| 6 | `litigation_records` | 384 | Web Agent (seed) | Web Agent | **Replaces Weaviate `LitigationRecord`** |
+| 7 | `rbi_circulars` | 384 | Web Agent (seed) | Web Agent | **Replaces Weaviate `RBICircular`** |
+| 8 | `mca_filings` | 384 | MCA Agent | MCA Agent | **Replaces Weaviate `MCAFiling`** |
+| 9 | `pan_profiles` | 384 | PAN Agent | PAN Agent, Compliance Agent | Cross-application PAN dedup |
+| 10 | `risk_decisions` | 384 | Risk Agent | Risk Agent, Bias Agent, CAM Agent | Similar past application outcomes |
+| 11 | `pd_transcripts` | 384 | PD Agent | PD Agent, CAM Agent | Interview pattern matching |
+| 12 | `stress_scenarios` | 384 | Stress Agent | Stress Agent, CAM Agent | Historical stress survivability |
+| 13 | `audit_events` | 384 | Monitor Agent | Monitor Agent | Anomaly detection in processing patterns |
+| 14 | `application_summaries` | 384 | CAM Agent | All agents | Full application context for cross-app intelligence |
+
+---
+
+## 5. Per-Agent Integration — Exact Code Changes
+
+### 5.1 Agent 1: Compliance Agent
+**File:** [compliance-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/compliance-agent/main.py)
+**Current lines:** 101
+
+#### What to add:
+After the compliance check (line 94), store the result in Actian and query for prior submissions from the same PAN.
+
+```python
+# Add to imports (top of file):
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add INSIDE process(), after computing the result (before return):
+
+# ── Actian VectorAI: Store compliance result ──
+pan = ucso.get("applicant", {}).get("pan", "")
+company = ucso.get("applicant", {}).get("company_name", "")
+compliance_text = f"Compliance check for {company} (PAN: {pan}). Status: {'PASS' if not missing else 'FAIL'}. Missing: {missing}"
+vectorai.upsert(
+    collection="application_summaries",
+    doc_id=f"{application_id}_compliance",
+    text=compliance_text,
+    metadata={
+        "application_id": application_id,
+        "pan": pan,
+        "agent": "compliance-agent",
+        "status": "PASS" if not missing else "FAIL",
+        "phase": "compliance",
+    }
+)
+
+# ── Actian VectorAI: Check for prior applications from same PAN ──
+if pan:
+    prior = vectorai.hybrid_search(
+        collection="application_summaries",
+        query_text=f"compliance check PAN {pan}",
+        filters={"pan": pan, "phase": "compliance"},
+        top_k=3,
+    )
+    if len(prior) > 1:  # More than just this one
+        self.logger.info(f"Found {len(prior)-1} prior applications from PAN {pan}")
+```
+
+---
+
+### 5.2 Agent 2: Doc Intelligence Agent ⭐ (HIGH IMPACT)
+**File:** [doc-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/doc-agent/main.py)
+**Current lines:** 286
+
+#### What to add:
+After extracting text from each PDF, **chunk it into ~500-char segments and embed each chunk** into Actian. This creates a searchable document knowledge base.
+
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+import uuid as uuid_mod
+vectorai = VectorAIClient()
+
+# Add NEW function before the class:
+def chunk_text(text: str, chunk_size: int = 500, overlap: int = 100) -> list[dict]:
+    """Split text into overlapping chunks for vector indexing."""
+    chunks = []
+    start = 0
+    chunk_num = 0
+    while start < len(text):
+        end = min(start + chunk_size, len(text))
+        chunk_text_segment = text[start:end]
+        if len(chunk_text_segment.strip()) > 50:  # Skip tiny chunks
+            chunks.append({
+                "text": chunk_text_segment,
+                "chunk_num": chunk_num,
+                "start_char": start,
+                "end_char": end,
+            })
+            chunk_num += 1
+        start += chunk_size - overlap
+    return chunks
+
+# Add INSIDE process(), after extracting text and financials (around line 234):
+
+# ── Actian VectorAI: Index document chunks ──
+if text and confidence >= 0.5:
+    chunks = chunk_text(text)
+    batch_docs = []
+    for chunk in chunks:
+        batch_docs.append({
+            "id": f"{application_id}_{doc_id}_chunk{chunk['chunk_num']}",
+            "text": chunk["text"],
+            "metadata": {
+                "application_id": application_id,
+                "doc_id": doc_id,
+                "doc_type": doc.get("type", "UNKNOWN"),
+                "chunk_num": chunk["chunk_num"],
+                "start_char": chunk["start_char"],
+                "end_char": chunk["end_char"],
+                "confidence": confidence,
+                "method": method,
+            },
+        })
+    if batch_docs:
+        vectorai.upsert_batch("document_chunks", batch_docs)
+        self.logger.info(
+            f"Indexed {len(batch_docs)} chunks into Actian VectorAI for doc {doc_id}",
+            extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
+        )
+
+# ── Actian VectorAI: Store financial profile embedding ──
+if aggregated_financials:
+    fin_summary = " ".join([f"{k}={v}" for k, v in aggregated_financials.items()])
+    vectorai.upsert(
+        collection="financial_profiles",
+        doc_id=f"{application_id}_financials",
+        text=f"Financial profile: {fin_summary}",
+        metadata={
+            "application_id": application_id,
+            "agent": "doc-agent",
+            **{k: float(v) for k, v in aggregated_financials.items()},
+        },
+    )
+```
+
+---
+
+### 5.3 Agent 3: PD (Personal Discussion) Agent
+**File:** [pd-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/pd-agent/main.py)
+**Current lines:** 229
+
+#### What to add:
+Store the PD transcript embedding and search for similar past interview patterns.
+
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add INSIDE process(), after evaluating the transcript (before return):
+
+# ── Actian VectorAI: Store PD transcript ──
+if transcript_text.strip():
+    vectorai.upsert(
+        collection="pd_transcripts",
+        doc_id=f"{application_id}_pd",
+        text=transcript_text[:2000],  # Cap at 2000 chars for embedding
+        metadata={
+            "application_id": application_id,
+            "agent": "pd-transcript-agent",
+            "source_type": source_type,
+            "risk_adjustment": round(risk_adj, 4),
+            "confidence": round(evaluation.get("confidence", 0.0), 4),
+        },
+    )
+
+    # ── Search for similar past PD patterns ──
+    similar_pds = vectorai.search(
+        collection="pd_transcripts",
+        query_text=transcript_text[:1000],
+        top_k=3,
+        min_score=0.70,
+    )
+    similar_app_ids = [
+        r["metadata"]["application_id"]
+        for r in similar_pds
+        if r["metadata"].get("application_id") != application_id
+    ]
+    # Include in output for CAM Agent reference
+```
+
+Add `"similar_past_pds": similar_app_ids` to the return dict.
+
+---
+
+### 5.4 Agent 4: GST Reconciliation Agent
+**File:** [gst-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/gst-agent/main.py)
+**Current lines:** 170
+
+#### What to add:
+Embed the GST pattern and search historical fraud patterns.
+
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add INSIDE process(), after computing results (before return):
+
+# ── Actian VectorAI: Store GST pattern ──
+gst_summary = (
+    f"GST reconciliation: discrepancy={itc_result['discrepancy_pct']}%, "
+    f"circular_trade_index={circular_result['circular_trade_index']}, "
+    f"cycles={len(circular_result['suspicious_cycles'])}, "
+    f"status={status}"
+)
+vectorai.upsert(
+    collection="gst_patterns",
+    doc_id=f"{application_id}_gst",
+    text=gst_summary,
+    metadata={
+        "application_id": application_id,
+        "agent": "gst-agent",
+        "discrepancy_pct": itc_result["discrepancy_pct"],
+        "circular_trade_index": circular_result["circular_trade_index"],
+        "status": status,
+    },
+)
+
+# ── Search for historically similar fraud patterns ──
+if status in ("FLAG", "WARNING"):
+    similar_fraud = vectorai.search(
+        collection="gst_patterns",
+        query_text=f"high GST discrepancy circular trading fraud {status}",
+        top_k=5,
+        min_score=0.65,
+    )
+    flagged_matches = [
+        r for r in similar_fraud
+        if r["metadata"].get("application_id") != application_id
+        and r["metadata"].get("status") in ("FLAG", "WARNING")
+    ]
+    if flagged_matches:
+        self.logger.warning(
+            f"GST pattern matches {len(flagged_matches)} previously flagged applications",
+            extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
+        )
+```
+
+---
+
+### 5.5 Agent 5: Bank Reconciliation Agent
+**File:** [bank-recon-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/bank-recon-agent/main.py)
+**Current lines:** 205
+
+#### What to add:
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add INSIDE process(), before return:
+
+# ── Actian VectorAI: Store reconciliation fingerprint ──
+recon_text = (
+    f"Bank reconciliation: credit_turnover={bank_credit_total}, "
+    f"divergence={divergence*100:.1f}%, inflation_flag={inflation_flag}, "
+    f"round_trips={len(round_trips)}, bounces={bounces}, verdict={verdict}"
+)
+vectorai.upsert(
+    collection="bank_recon_profiles",
+    doc_id=f"{application_id}_bank_recon",
+    text=recon_text,
+    metadata={
+        "application_id": application_id,
+        "agent": "bank-recon-agent",
+        "turnover_divergence_pct": round(divergence * 100, 2),
+        "inflation_flag": inflation_flag,
+        "round_trip_count": len(round_trips),
+        "bounce_count": bounces,
+        "verdict": verdict,
+    },
+)
+```
+
+---
+
+### 5.6 Agent 6: MCA Intelligence Agent
+**File:** [mca-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/mca-agent/main.py)
+**Current lines:** 233
+
+#### What to change:
+**Replace the `fetch_from_weaviate_fallback()` function entirely** to use Actian VectorAI instead of Weaviate.
+
+```python
+# Replace Weaviate import and URL with:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Replace fetch_from_weaviate_fallback() with:
+def fetch_from_actian_vectorai(company_name: str) -> dict:
+    """Query Actian VectorAI mca_filings collection (replaces Weaviate)."""
+    results = vectorai.search(
+        collection="mca_filings",
+        query_text=f"{company_name} MCA filing company status",
+        top_k=5,
+        min_score=0.60,
+    )
+    if not results:
+        return {
+            "company_status": "UNKNOWN", "director_changes_last_2yr": [],
+            "charges_registered": [], "new_charge_flag": False,
+            "director_din_list": [], "last_agm_date": "", "defaulter_flag": False,
+        }
+    risk_flags = [r for r in results if r["metadata"].get("risk_flag")]
+    return {
+        "company_status": "ACTIVE" if not risk_flags else "FLAGGED",
+        "director_changes_last_2yr": [],
+        "charges_registered": [
+            {"description": r["metadata"].get("description", ""), "filing_date": r["metadata"].get("filing_date", "")}
+            for r in results if r["metadata"].get("filing_type") == "CHARGE"
+        ],
+        "new_charge_flag": any(r["metadata"].get("filing_type") == "CHARGE" for r in results),
+        "director_din_list": [],
+        "last_agm_date": "",
+        "defaulter_flag": any(r["metadata"].get("risk_flag") for r in results),
+    }
+
+#  In process(), change:
+#    return fetch_from_weaviate_fallback(company_name)
+#  To:
+#    return fetch_from_actian_vectorai(company_name)
+```
+
+Also store MCA results:
+```python
+# After getting results, store in Actian:
+mca_text = f"MCA profile: {company_name}, status={result.get('company_status')}, defaulter={result.get('defaulter_flag')}"
+vectorai.upsert(
+    collection="mca_filings",
+    doc_id=f"{application_id}_mca",
+    text=mca_text,
+    metadata={"application_id": application_id, "agent": "mca-agent", **result},
+)
+```
+
+---
+
+### 5.7 Agent 7: Web Intelligence Agent ⭐ (HIGHEST IMPACT — Weaviate Replacement)
+**File:** [web-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/web-agent/main.py)  
+**Current lines:** 280
+
+#### What to change:
+**This is the biggest change.** Replace ALL Weaviate `query_weaviate_collection()` calls with Actian VectorAI calls.
+
+```python
+# REMOVE these lines:
+#   WEAVIATE_URL = os.getenv("WEAVIATE_URL", "http://weaviate:8080")
+#   def query_weaviate_collection(...)
+
+# ADD:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Replace query_weaviate_collection with:
+def query_actian_collection(collection: str, query_text: str, top_k: int = 10, min_score: float = 0.75) -> list[dict]:
+    """Query Actian VectorAI (replaces Weaviate). Uses cosine similarity."""
+    results = vectorai.search(
+        collection=collection,
+        query_text=query_text,
+        top_k=top_k,
+        min_score=min_score,
+    )
+    return [r["metadata"] for r in results]
+
+# Replace fetch_news():
+def fetch_news(company_name: str, industry: str) -> list:
+    hits = query_actian_collection(
+        "news_articles",
+        f"{company_name} {industry} risk scandal fraud",
+        top_k=10, min_score=0.70,
+    )
+    scored_news = []
+    for hit in hits:
+        sentiment = score_article(hit.get("headline", ""), hit.get("body", ""))
+        scored_news.append({
+            "headline": hit.get("headline", ""),
+            "source_url": hit.get("source_url", ""),
+            "credibility_score": hit.get("credibility_score", 0),
+            "sentiment_score": sentiment["sentiment_score"],
+            "risk_contribution": sentiment["risk_contribution"],
+            "published_at": hit.get("published_at", ""),
+            "entity_tags": hit.get("entity_tags", []),
+        })
+    return scored_news
+
+# Replace fetch_litigation() fallback section:
+#   Instead of querying Weaviate LitigationRecord, query:
+    hits = query_actian_collection("litigation_records", company_name, top_k=10, min_score=0.60)
+
+# Replace fetch_regulatory_flags():
+    hits = query_actian_collection("rbi_circulars", f"{industry} regulation risk", top_k=5, min_score=0.60)
+```
+
+Also **store** web intel results back:
+```python
+# In process(), after computing results:
+web_summary = f"Web intel for {company_name}: {len(promoter_news)} articles, {len(litigation_records)} cases, sentiment={aggregate_news_sentiment(promoter_news)}"
+vectorai.upsert(
+    collection="application_summaries",
+    doc_id=f"{application_id}_web_intel",
+    text=web_summary,
+    metadata={
+        "application_id": application_id,
+        "agent": "web-intelligence-agent",
+        "article_count": len(promoter_news),
+        "litigation_count": len(litigation_records),
+        "phase": "web_intel",
+    },
+)
+```
+
+---
+
+### 5.8 Agent 8: Model Selector Agent
+**File:** [model-selector-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/model-selector-agent/main.py)
+**Current lines:** 119
+
+#### What to add:
+Query Actian for similar past applications to see which model performed best for similar profiles.
+
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add INSIDE process(), before selecting model:
+
+# ── Actian VectorAI: Check which model worked best for similar profiles ──
+similar_profiles = vectorai.search(
+    collection="financial_profiles",
+    query_text=" ".join([f"{k}={v}" for k, v in derived_features.items() if isinstance(v, (int, float))]),
+    top_k=5,
+    min_score=0.70,
+)
+# If most similar past applications used XGBOOST successfully, prefer it
+past_models = [r["metadata"].get("model_used") for r in similar_profiles if r["metadata"].get("model_used")]
+
+# Store the selection
+vectorai.upsert(
+    collection="application_summaries",
+    doc_id=f"{application_id}_model_selection",
+    text=f"Model selected: {model_name} for application {application_id}",
+    metadata={
+        "application_id": application_id,
+        "agent": "model-selector-agent",
+        "model_used": model_name,
+        "feature_count": feature_count,
+        "phase": "model_selection",
+    },
+)
+```
+
+---
+
+### 5.9 Agent 9: Risk Agent ⭐ (HIGH IMPACT)
+**File:** [risk-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/risk-agent/main.py)
+**Current lines:** 339
+
+#### What to add:
+Before scoring, search Actian for the 5 most similar past applications and their outcomes. Include in the risk report as "comparable cases."
+
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add INSIDE process(), after Step 3 (compute score) and before Step 5 (SHAP):
+
+# ── Actian VectorAI: Find similar past risk decisions ──
+feature_text = " ".join([f"{k}={v:.4f}" for k, v in normalized_features.items()])
+similar_cases = vectorai.search(
+    collection="risk_decisions",
+    query_text=feature_text,
+    top_k=5,
+    min_score=0.65,
+)
+comparable_cases = [
+    {
+        "application_id": r["metadata"].get("application_id", ""),
+        "score": r["metadata"].get("risk_score", 0),
+        "band": r["metadata"].get("risk_band", ""),
+        "decision": r["metadata"].get("decision", ""),
+        "similarity": round(r.get("score", 0), 4),
+    }
+    for r in similar_cases
+    if r["metadata"].get("application_id") != application_id
+]
+
+# Add INSIDE process(), before return:
+
+# ── Actian VectorAI: Store this risk decision ──
+vectorai.upsert(
+    collection="risk_decisions",
+    doc_id=f"{application_id}_risk",
+    text=f"Risk decision: score={score}, band={band}, decision={decision}. Features: {feature_text}",
+    metadata={
+        "application_id": application_id,
+        "agent": "risk-agent",
+        "risk_score": score,
+        "risk_band": band,
+        "decision": decision,
+        "model_used": model_used,
+        "industry": applicant.get("industry_sector", ""),
+    },
+)
+```
+
+Add `"comparable_cases": comparable_cases` to the return dict.
+
+---
+
+### 5.10 Agent 10: Bias Agent
+**File:** [bias-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/bias-agent/main.py)
+**Current lines:** 162
+
+#### What to add:
+Store bias results and search for historical bias patterns.
+
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add INSIDE process(), before return:
+
+# ── Actian VectorAI: Store bias check ──
+bias_text = f"Bias check: {len(flip_features)} flips, {len(overweight_flags)} overweights. Original decision: {original_decision}"
+vectorai.upsert(
+    collection="application_summaries",
+    doc_id=f"{application_id}_bias",
+    text=bias_text,
+    metadata={
+        "application_id": application_id,
+        "agent": "bias-agent",
+        "flip_count": len(flip_features),
+        "overweight_count": len(overweight_flags),
+        "original_decision": original_decision,
+        "phase": "bias",
+    },
+)
+
+# ── Search for historically biased patterns ──
+if flip_features:
+    similar_bias = vectorai.hybrid_search(
+        collection="application_summaries",
+        query_text="bias decision flip counterfactual overweight",
+        filters={"phase": "bias"},
+        top_k=5,
+    )
+```
+
+---
+
+### 5.11 Agent 11: Stress Agent
+**File:** [stress-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/stress-agent/main.py)
+**Current lines:** 189
+
+#### What to add:
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add INSIDE process(), before return:
+
+# ── Actian VectorAI: Store stress results ──
+stress_text = (
+    f"Stress test: worst_dscr={worst_dscr:.4f}, verdict={survival_verdict}. "
+    f"Scenarios: Rev-20% DSCR={dscr_rev_shock:.4f}, Rate+2% DSCR={dscr_rate_shock:.4f}, Combined={dscr_combined:.4f}"
+)
+vectorai.upsert(
+    collection="stress_scenarios",
+    doc_id=f"{application_id}_stress",
+    text=stress_text,
+    metadata={
+        "application_id": application_id,
+        "agent": "stress-agent",
+        "worst_dscr": worst_dscr,
+        "survival_verdict": survival_verdict,
+        "base_dscr": base_dscr,
+    },
+)
+
+# ── Search for similar stress profiles ──
+similar_stress = vectorai.search(
+    collection="stress_scenarios",
+    query_text=stress_text,
+    top_k=3,
+    min_score=0.70,
+)
+past_outcomes = [
+    {"app_id": r["metadata"]["application_id"], "verdict": r["metadata"]["survival_verdict"]}
+    for r in similar_stress
+    if r["metadata"].get("application_id") != application_id
+]
+```
+
+---
+
+### 5.12 Agent 12: CAM Generator Agent ⭐ (HIGH IMPACT)
+**File:** [cam-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/cam-agent/main.py)
+**Current lines:** 366
+
+#### What to add:
+When generating the CAM, **query Actian `document_chunks` to find exact evidence** for each section of the credit report. This adds source citations.
+
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add NEW function:
+def find_evidence(application_id: str, claim: str, top_k: int = 2) -> list[dict]:
+    """Search Actian VectorAI for document evidence supporting a claim."""
+    results = vectorai.hybrid_search(
+        collection="document_chunks",
+        query_text=claim,
+        filters={"application_id": application_id},
+        top_k=top_k,
+    )
+    return [
+        {
+            "source": r["metadata"].get("doc_type", ""),
+            "chunk_num": r["metadata"].get("chunk_num", 0),
+            "confidence": r["metadata"].get("confidence", 0),
+            "text_preview": r["metadata"].get("text_preview", "")[:100],
+            "similarity": round(r.get("score", 0), 3),
+        }
+        for r in results
+    ]
+
+# INSIDE generate_cam_document(), after each section heading, add evidence:
+
+# Example for Revenue section:
+revenue_evidence = find_evidence(application_id, "annual revenue turnover sales")
+if revenue_evidence:
+    doc.add_paragraph(
+        f"[Source: {revenue_evidence[0]['source']}, "
+        f"Chunk #{revenue_evidence[0]['chunk_num']}, "
+        f"Confidence: {revenue_evidence[0]['similarity']:.0%}]",
+        style="Intense Quote"
+    )
+
+# Also store the CAM summary:
+cam_summary = f"CAM generated for {applicant.get('company_name')}. Decision: {risk.get('decision')}. Score: {risk.get('score')}."
+vectorai.upsert(
+    collection="application_summaries",
+    doc_id=f"{application_id}_cam",
+    text=cam_summary,
+    metadata={
+        "application_id": application_id,
+        "agent": "cam-agent",
+        "decision": risk.get("decision", ""),
+        "risk_score": risk.get("score", 0),
+        "phase": "cam",
+    },
+)
+```
+
+---
+
+### 5.13 Agent 13: Monitor Agent
+**File:** [monitor-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/monitor-agent/main.py)
+**Current lines:** 198
+
+#### What to add:
+Use Actian for **anomaly detection** — compare current processing patterns against historical norms.
+
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add INSIDE process(), after building alerts:
+
+# ── Actian VectorAI: Store audit event ──
+audit_text = (
+    f"Health check for {application_id}: {len(alerts)} alerts. "
+    f"Types: {[a['type'] for a in alerts]}"
+)
+vectorai.upsert(
+    collection="audit_events",
+    doc_id=f"{application_id}_audit_{now.replace(':', '').replace('-', '')}",
+    text=audit_text,
+    metadata={
+        "application_id": application_id,
+        "agent": "monitor-agent",
+        "alert_count": len(alerts),
+        "alert_types": [a["type"] for a in alerts],
+    },
+)
+
+# ── Anomaly Detection: Compare against historical patterns ──
+if alerts:
+    similar_alerts = vectorai.search(
+        collection="audit_events",
+        query_text=audit_text,
+        top_k=5,
+        min_score=0.80,
+    )
+    # If this pattern matches known fraud/failure cases, escalate
+    for match in similar_alerts:
+        if match["metadata"].get("application_id") != application_id:
+            if match["metadata"].get("alert_count", 0) > 3:
+                alerts.append({
+                    "type": "PATTERN_MATCH",
+                    "severity": "HIGH",
+                    "message": f"Processing pattern {match.get('score', 0):.0%} similar to flagged application {match['metadata']['application_id'][:8]}...",
+                    "timestamp": now,
+                })
+```
+
+---
+
+### 5.14 Agent 14: PAN Verification Agent
+**File:** [pan-agent/main.py](file:///Users/utkarshsingh/Desktop/Trinetra/agents/pan-agent/main.py)
+**Current lines:** 163
+
+#### What to add:
+Store PAN results and check for cross-application PAN duplicates.
+
+```python
+# Add to imports:
+from shared.vectorai_client import VectorAIClient
+vectorai = VectorAIClient()
+
+# Add INSIDE process(), before return:
+
+# ── Actian VectorAI: Store PAN profile ──
+pan_text = f"PAN verification: {pan}, name={extracted.get('full_name')}, category={extracted.get('category')}, confidence={extracted.get('confidence')}"
+vectorai.upsert(
+    collection="pan_profiles",
+    doc_id=f"{application_id}_pan",
+    text=pan_text,
+    metadata={
+        "application_id": application_id,
+        "agent": "pan-verification-agent",
+        "pan": pan,
+        "full_name": extracted.get("full_name", ""),
+        "category": extracted.get("category", ""),
+        "confidence": extracted.get("confidence", 0),
+    },
+)
+
+# ── Cross-application PAN deduplication ──
+prior_pans = vectorai.hybrid_search(
+    collection="pan_profiles",
+    query_text=f"PAN {pan}",
+    filters={"pan": pan},
+    top_k=5,
+)
+prior_apps = [
+    r["metadata"]["application_id"]
+    for r in prior_pans
+    if r["metadata"].get("application_id") != application_id
+]
+if prior_apps:
+    self.logger.warning(
+        f"PAN {pan} already seen in {len(prior_apps)} other applications: {prior_apps[:3]}",
+        extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
+    )
+```
+
+Add `"prior_applications_same_pan": prior_apps` to the return dict.
+
+---
+
+## 6. Backend Storage Integration
+
+### [MODIFY] `backend/storage/actian_adapter.py`
+
+Add a `VectorAIClient` instance in the backend for collection initialization on startup.
+
+```python
+# Add to __init__:
+from shared.vectorai_client import VectorAIClient  # or inline REST calls
+
+def initialize_collections(self):
+    """Pre-create all Actian VectorAI collections on backend startup."""
+    collections = [
+        "document_chunks", "financial_profiles", "gst_patterns",
+        "bank_recon_profiles", "news_articles", "litigation_records",
+        "rbi_circulars", "mca_filings", "pan_profiles", "risk_decisions",
+        "pd_transcripts", "stress_scenarios", "audit_events", "application_summaries",
+    ]
+    for name in collections:
+        self.vectorai.create_collection(name)
+```
+
+---
+
+## 7. Collection Seeding Script
+
+### [NEW] `agents/seed_vectorai.py`
+
+Seeds the Actian VectorAI collections with sample data (news, litigation, RBI circulars, MCA filings) so the Web Agent and MCA Agent have data to query on first run.
+
+```python
+"""Seed Actian VectorAI with sample financial intelligence data."""
+from shared.vectorai_client import VectorAIClient
+
+vectorai = VectorAIClient()
+
+# Create all collections
+COLLECTIONS = [
+    "document_chunks", "financial_profiles", "gst_patterns",
+    "bank_recon_profiles", "news_articles", "litigation_records",
+    "rbi_circulars", "mca_filings", "pan_profiles", "risk_decisions",
+    "pd_transcripts", "stress_scenarios", "audit_events", "application_summaries",
+]
+for name in COLLECTIONS:
+    vectorai.create_collection(name)
+    print(f"  ✅ Created collection: {name}")
+
+# Seed news_articles with sample Indian business news
+SAMPLE_NEWS = [
+    {"id": "news_001", "text": "Adani Group reports strong revenue growth of 45% YoY", "metadata": {"headline": "Adani Group reports strong revenue growth", "source_url": "https://example.com", "credibility_score": 4, "published_at": "2026-03-15T00:00:00Z"}},
+    {"id": "news_002", "text": "SEBI investigation into circular trading at mid-cap firms", "metadata": {"headline": "SEBI probes circular trading", "source_url": "https://example.com", "credibility_score": 5, "published_at": "2026-04-01T00:00:00Z"}},
+    # ... add 20-30 more sample articles
+]
+vectorai.upsert_batch("news_articles", SAMPLE_NEWS)
+
+# Seed rbi_circulars, litigation_records, mca_filings similarly...
+print("🎉 Seeding complete!")
+```
+
+---
+
+## 8. Execution Checklist
+
+| # | Task | Files Changed | Priority |
+|---|---|---|---|
+| 1 | Create `docker-compose.vectorai.yml` | NEW file | 🔴 P0 |
+| 2 | Create `agents/shared/vectorai_client.py` | NEW file (the core) | 🔴 P0 |
+| 3 | Update `agents/shared/__init__.py` | MODIFY | 🔴 P0 |
+| 4 | Update `agents/.env` + `backend/.env` | MODIFY | 🔴 P0 |
+| 5 | Update `agents/requirements.txt` | MODIFY | 🔴 P0 |
+| 6 | Rewrite Web Agent (replace Weaviate) | MODIFY `web-agent/main.py` | 🔴 P0 |
+| 7 | Rewrite MCA Agent (replace Weaviate) | MODIFY `mca-agent/main.py` | 🔴 P0 |
+| 8 | Add chunking to Doc Agent | MODIFY `doc-agent/main.py` | 🔴 P0 |
+| 9 | Add similar-case search to Risk Agent | MODIFY `risk-agent/main.py` | 🟡 P1 |
+| 10 | Add evidence search to CAM Agent | MODIFY `cam-agent/main.py` | 🟡 P1 |
+| 11 | Add anomaly detection to Monitor Agent | MODIFY `monitor-agent/main.py` | 🟡 P1 |
+| 12 | Add to GST Agent | MODIFY `gst-agent/main.py` | 🟢 P2 |
+| 13 | Add to Bank Recon Agent | MODIFY `bank-recon-agent/main.py` | 🟢 P2 |
+| 14 | Add to PAN Agent | MODIFY `pan-agent/main.py` | 🟢 P2 |
+| 15 | Add to PD Agent | MODIFY `pd-agent/main.py` | 🟢 P2 |
+| 16 | Add to Compliance Agent | MODIFY `compliance-agent/main.py` | 🟢 P2 |
+| 17 | Add to Bias Agent | MODIFY `bias-agent/main.py` | 🟢 P2 |
+| 18 | Add to Stress Agent | MODIFY `stress-agent/main.py` | 🟢 P2 |
+| 19 | Add to Model Selector Agent | MODIFY `model-selector-agent/main.py` | 🟢 P2 |
+| 20 | Create seeding script | NEW `seed_vectorai.py` | 🟢 P2 |
+| 21 | Update backend storage init | MODIFY `actian_adapter.py` | ⚪ P3 |
+
+---
+
+## 9. Verification Plan
+
+### Automated
+```bash
+# 1. Start VectorAI Docker
+docker-compose -f docker-compose.vectorai.yml up -d
+
+# 2. Seed collections
+cd agents && python3 seed_vectorai.py
+
+# 3. Start backend + agents
+cd .. && sh start_watchdog.sh
+
+# 4. Run the full pipeline test
+cd agents && python3 test_with_docs.py
+```
+
+### Manual
+1. Upload a PDF via the frontend
+2. Check Actian VectorAI logs for embeddings being stored by each agent
+3. Verify the CAM document includes `[Source: ...]` evidence citations
+4. Verify the Risk Agent output includes `comparable_cases` from Actian
+
+> [!IMPORTANT]
+> **Deadline reminder:** If submitting to the Actian VectorAI DB Build Challenge (April 13–18, 2026), prioritize P0 tasks. The P0 tasks alone (VectorAI client + Web Agent + Doc Agent + Risk Agent rewrites) are enough to demonstrate deep, native Actian integration across the most impressive agents.

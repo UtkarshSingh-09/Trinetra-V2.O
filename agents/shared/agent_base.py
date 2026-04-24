@@ -13,6 +13,8 @@ import json
 import signal
 import sys
 import time
+import uuid
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 # Load .env from agents/ directory (auto-loads API keys for all agents)
@@ -65,6 +67,9 @@ class AgentBase:
         """Publish a Redis event after successful processing."""
         message = {
             "application_id": application_id,
+            "event_id": str(uuid.uuid4()),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": topic,
             "source_agent": self.AGENT_NAME,
             **(extra or {}),
         }
@@ -82,6 +87,9 @@ class AgentBase:
 
         message = {
             "application_id": application_id,
+            "event_id": str(uuid.uuid4()),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": "agent_status",
             "agent": self.AGENT_NAME,
             "status": status,
             "error_code": error_code,

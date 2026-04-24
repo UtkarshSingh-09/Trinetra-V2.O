@@ -8,19 +8,26 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Prefer project virtualenv if present so all agent deps resolve consistently.
+if [ -x "$SCRIPT_DIR/../.venv/bin/python" ]; then
+    PYTHON_BIN="$SCRIPT_DIR/../.venv/bin/python"
+else
+    PYTHON_BIN="python3"
+fi
+
 # Load .env values
 if [ -f .env ]; then
     export BACKEND_URL=$(grep "^BACKEND_URL=" .env | cut -d= -f2-)
-    export KAFKA_BROKER=$(grep "^KAFKA_BROKER=" .env | cut -d= -f2-)
+    export REDIS_URL=$(grep "^REDIS_URL=" .env | cut -d= -f2-)
 fi
 BACKEND_URL="${BACKEND_URL:-http://localhost:8080}"
-KAFKA_BROKER="${KAFKA_BROKER:-localhost:9092}"
+REDIS_URL="${REDIS_URL:-redis://localhost:6379}"
 
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║   TRINETRA — Starting All 13 Agents                     ║"
 echo "╠══════════════════════════════════════════════════════════╣"
 echo "║  Backend:  ${BACKEND_URL}                                ║"
-echo "║  Kafka:    ${KAFKA_BROKER}                               ║"
+echo "║  Redis:    ${REDIS_URL}                                  ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 
 # ── Pre-flight checks ──
@@ -28,22 +35,22 @@ echo ""
 echo "🔍 Running pre-flight checks..."
 
 # Check backend
-if curl -s --connect-timeout 3 "${BACKEND_URL}" > /dev/null 2>&1; then
+if curl -s --connect-timeout 3 "${BACKEND_URL}/health" > /dev/null 2>&1; then
     echo "  ✅ Backend is reachable at ${BACKEND_URL}"
 else
     echo "  ❌ Backend is NOT reachable at ${BACKEND_URL}"
-    echo "     Make sure Spring Boot is running!"
+    echo "     Make sure FastAPI backend is running!"
     exit 1
 fi
 
-# Check Kafka
-KAFKA_HOST=$(echo ${KAFKA_BROKER} | cut -d: -f1)
-KAFKA_PORT=$(echo ${KAFKA_BROKER} | cut -d: -f2)
-if nc -z -w3 "$KAFKA_HOST" "$KAFKA_PORT" 2>/dev/null; then
-    echo "  ✅ Kafka is reachable at ${KAFKA_BROKER}"
+# Check Redis
+REDIS_HOST=$(echo ${REDIS_URL#redis://} | cut -d: -f1)
+REDIS_PORT=$(echo ${REDIS_URL#redis://} | cut -d: -f2)
+if nc -z -w3 "$REDIS_HOST" "$REDIS_PORT" 2>/dev/null; then
+    echo "  ✅ Redis is reachable at ${REDIS_URL}"
 else
-    echo "  ❌ Kafka is NOT reachable at ${KAFKA_BROKER}"
-    echo "     Make sure Kafka is running! (docker-compose up -d kafka)"
+    echo "  ❌ Redis is NOT reachable at ${REDIS_URL}"
+    echo "     Make sure Redis is running!"
     exit 1
 fi
 
@@ -73,7 +80,7 @@ AGENTS=(
 PIDS=()
 for agent in "${AGENTS[@]}"; do
     if [ -f "$agent/main.py" ]; then
-        python "$agent/main.py" > "logs/${agent}.log" 2>&1 &
+        "$PYTHON_BIN" "$agent/main.py" > "logs/${agent}.log" 2>&1 &
         PID=$!
         PIDS+=($PID)
         echo "  ✅ Started ${agent} (PID: $PID)"

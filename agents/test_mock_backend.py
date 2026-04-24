@@ -73,7 +73,7 @@ def patch_namespace(app_id, namespace):
 @app.route("/api/files/upload", methods=["POST"])
 def upload_file():
     app_id = request.form.get("application_id")
-    doc_type = request.form.get("doc_type")
+    doc_type = request.form.get("type") or request.form.get("doc_type")
     file = request.files.get("file")
     
     if not file:

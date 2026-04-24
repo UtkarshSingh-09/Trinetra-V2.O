@@ -11,15 +11,24 @@ Errors: PARSE_LOW_CONF (<0.6) → flag for human review. PARSE_FAIL → retry al
 import sys
 import os
 import re
+import json
 import tempfile
+import uuid as uuid_mod
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
+from shared.vectorai_client import VectorAIClient
 
 import pdfplumber
 import pytesseract
 from PIL import Image
 import requests as http_requests
+
+
+vectorai = VectorAIClient()
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 # ── Indian Number Normalizer ──
@@ -154,6 +163,126 @@ def extract_financials(text: str) -> dict:
     return results
 
 
+def _to_float(value) -> float:
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        return normalize_indian_number(value)
+    return 0.0
+
+
+def extract_financials_with_llm(text: str) -> dict:
+    """Use Groq LLM to extract financial data from document text."""
+    if not GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY missing")
+
+    prompt = (
+        "Extract the EXACT financial values from the document text. "
+        "Do NOT make up or estimate values. "
+        "Return only valid JSON with these keys: "
+        "revenue, ebitda, net_profit, total_debt, net_worth, interest_expense, "
+        "principal_repayment, operating_expenses, cibil_score, promoter_holding_pct, "
+        "pledged_shares_pct, working_capital_cycle_days. "
+        "Use null when unavailable. Values may include units like Cr/Lakh if present."
+    )
+
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": (text or "")[:6000]},
+        ],
+        "temperature": 0.0,
+        "response_format": {"type": "json_object"},
+    }
+
+    response = http_requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=35)
+    response.raise_for_status()
+    content = response.json()["choices"][0]["message"]["content"]
+    data = json.loads(content)
+
+    fields = [
+        "revenue",
+        "ebitda",
+        "net_profit",
+        "total_debt",
+        "net_worth",
+        "interest_expense",
+        "principal_repayment",
+        "operating_expenses",
+        "cibil_score",
+        "promoter_holding_pct",
+        "pledged_shares_pct",
+        "working_capital_cycle_days",
+    ]
+
+    cleaned = {}
+    for key in fields:
+        cleaned[key] = _to_float(data.get(key))
+    return cleaned
+
+
+def compute_derived_features(financials: dict) -> dict:
+    """Compute DSCR/ICR/Leverage/EBITDA margin/revenue growth from extracted financials."""
+    revenue = _to_float(financials.get("revenue"))
+    ebitda = _to_float(financials.get("ebitda"))
+    total_debt = _to_float(financials.get("total_debt"))
+    net_worth = _to_float(financials.get("net_worth"))
+    interest_expense = _to_float(financials.get("interest_expense"))
+    principal_repayment = _to_float(financials.get("principal_repayment"))
+    operating_expenses = _to_float(financials.get("operating_expenses"))
+    ccc = _to_float(financials.get("working_capital_cycle_days"))
+
+    if operating_expenses <= 0 and revenue > 0 and ebitda > 0:
+        operating_expenses = max(0.0, revenue - ebitda)
+
+    noi = max(0.0, revenue - operating_expenses)
+    total_debt_service = interest_expense + principal_repayment
+
+    dscr = (noi / total_debt_service) if total_debt_service > 0 else 0.0
+    icr = (ebitda / interest_expense) if interest_expense > 0 else 0.0
+    leverage = (total_debt / net_worth) if net_worth > 0 else 0.0
+    ebitda_margin = (ebitda / revenue) if revenue > 0 else 0.0
+
+    return {
+        "dscr": round(dscr, 4),
+        "icr": round(icr, 4),
+        "leverage": round(leverage, 4),
+        "ebitda_margin": round(ebitda_margin, 4),
+        "revenue_growth": 0.0,
+        "ccc": round(ccc, 2),
+    }
+
+
+def chunk_text(text: str, chunk_size: int = 500, overlap: int = 100) -> list[dict]:
+    """Split text into overlapping chunks for vector indexing."""
+    chunks = []
+    start = 0
+    chunk_num = 0
+    step = max(1, chunk_size - overlap)
+    while start < len(text):
+        end = min(start + chunk_size, len(text))
+        segment = text[start:end]
+        if len(segment.strip()) > 50:
+            chunks.append(
+                {
+                    "text": segment,
+                    "chunk_num": chunk_num,
+                    "start_char": start,
+                    "end_char": end,
+                }
+            )
+            chunk_num += 1
+        start += step
+    return chunks
+
+
 class DocIntelligenceAgent(AgentBase):
     AGENT_NAME = "doc-intelligence-agent"
     LISTEN_TOPICS = ["docs_uploaded", "compliance_passed"]
@@ -206,8 +335,16 @@ class DocIntelligenceAgent(AgentBase):
                 # Extract text
                 text, confidence, method = extract_text_from_pdf(tmp_path)
 
-                # Extract financial fields
-                extracted = extract_financials(text)
+                # Extract financial fields via LLM. Fallback to regex only if LLM call fails.
+                try:
+                    extracted = extract_financials_with_llm(text)
+                    method = f"{method}+groq"
+                except Exception as llm_error:
+                    self.logger.warning(
+                        f"Groq extraction failed for doc {doc_id}, falling back to regex: {llm_error}",
+                        extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
+                    )
+                    extracted = extract_financials(text)
 
                 # Update document record
                 doc["parsed"] = True
@@ -232,6 +369,37 @@ class DocIntelligenceAgent(AgentBase):
                 for k, v in extracted.items():
                     if k not in aggregated_financials or v > 0:
                         aggregated_financials[k] = v
+
+                if text and confidence >= 0.5:
+                    chunks = chunk_text(text)
+                    batch_docs = []
+                    for chunk in chunks:
+                        batch_docs.append(
+                            {
+                                "id": (
+                                    f"{application_id}_{doc_id}_"
+                                    f"{uuid_mod.uuid4().hex[:8]}_chunk{chunk['chunk_num']}"
+                                ),
+                                "text": chunk["text"],
+                                "metadata": {
+                                    "application_id": application_id,
+                                    "doc_id": doc_id,
+                                    "doc_type": doc.get("type", doc.get("doc_type", "UNKNOWN")),
+                                    "chunk_num": chunk["chunk_num"],
+                                    "start_char": chunk["start_char"],
+                                    "end_char": chunk["end_char"],
+                                    "confidence": confidence,
+                                    "method": method,
+                                    "text_preview": chunk["text"][:160],
+                                },
+                            }
+                        )
+                    if batch_docs:
+                        vectorai.upsert_batch("document_chunks", batch_docs)
+                        self.logger.info(
+                            f"Indexed {len(batch_docs)} chunks into Actian VectorAI for doc {doc_id}",
+                            extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
+                        )
 
                 # Clean up temp file (only if we downloaded it)
                 if tmp_path != local_path and tmp_path:
@@ -262,8 +430,13 @@ class DocIntelligenceAgent(AgentBase):
                 "total_debt": "total_debt",
                 "net_worth": "net_worth",
                 "interest_expense": "interest_expense",
+                "principal_repayment": "principal_repayment",
+                "operating_expenses": "operating_expenses",
                 "taxable_income": "itr_taxable_income",
                 "cibil_score": "cibil_score",
+                "promoter_holding_pct": "promoter_holding_pct",
+                "pledged_shares_pct": "pledged_shares_pct",
+                "working_capital_cycle_days": "ccc",
             }
             for src, dest in field_map.items():
                 if src in aggregated_financials:
@@ -275,6 +448,23 @@ class DocIntelligenceAgent(AgentBase):
 
             self.ucso_client.patch_namespace(
                 application_id, "financials", financials_patch
+            )
+
+            derived_patch = compute_derived_features(aggregated_financials)
+            self.ucso_client.patch_namespace(
+                application_id, "derived_features", derived_patch
+            )
+
+            fin_summary = " ".join([f"{k}={v}" for k, v in aggregated_financials.items()])
+            vectorai.upsert(
+                collection="financial_profiles",
+                doc_id=f"{application_id}_financials",
+                text=f"Financial profile: {fin_summary}",
+                metadata={
+                    "application_id": application_id,
+                    "agent": self.AGENT_NAME,
+                    **{k: float(v) for k, v in aggregated_financials.items()},
+                },
             )
 
         return {"files": updated_files}
