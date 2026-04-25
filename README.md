@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # 🔱 Trinetra — Agentic Credit Intelligence OS
 
@@ -589,4 +589,4 @@ Trinetra/
 **14 Agents. 14 Actian VectorAI Collections. One Decision.**
 
 </div>
-]]>
+
