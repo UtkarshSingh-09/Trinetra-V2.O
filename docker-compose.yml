@@ -62,6 +62,7 @@ services:
       - OIDC_AUDIENCE=${OIDC_AUDIENCE:-}
     volumes:
       - ./backend/local_storage:/app/local_storage
+      - ./synthetic_data:/app/synthetic_data:ro
     depends_on:
       redis:
         condition: service_healthy
@@ -79,6 +80,8 @@ services:
     container_name: trinetra-frontend
     ports:
       - "5173:80"
+    volumes:
+      - ./Frontend/Trinetra-Intelligent-credit/dist:/usr/share/nginx/html:ro
     depends_on:
       - backend
     restart: unless-stopped
@@ -152,7 +155,7 @@ services:
   mca-agent:
     image: trinetra-agent:latest
     container_name: agent-mca
-    command: python mca-agent/main.py
+    command: sh -c "python -c 'import bs4' 2>/dev/null || pip install beautifulsoup4; python mca-agent/main.py"
     environment: *agent-env
     deploy: *agent-deploy
     depends_on: [backend]
@@ -161,7 +164,7 @@ services:
   web-agent:
     image: trinetra-agent:latest
     container_name: agent-web
-    command: python web-agent/main.py
+    command: sh -c "python -c 'import bs4' 2>/dev/null || pip install beautifulsoup4; python web-agent/main.py"
     environment: *agent-env
     deploy: *agent-deploy
     depends_on: [backend]
