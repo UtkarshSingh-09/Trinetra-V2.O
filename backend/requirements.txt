@@ -8,7 +8,9 @@ qdrant-client>=1.18.0
 psycopg2-binary>=2.9.9
 SQLAlchemy>=2.0.25
 asyncpg>=0.29.0
+alembic>=1.13.0
 aiosqlite>=0.20.0
 greenlet>=3.0.0
-alembic>=1.13.0
+cryptography>=42.0.0
+requests>=2.31.0
 
