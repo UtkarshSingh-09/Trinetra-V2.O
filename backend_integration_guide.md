@@ -1,11 +1,11 @@
-# Trinetra Backend Integration Guide (FastAPI + Redis + Actian Storage)
+# Trinetra Backend Integration Guide (FastAPI + Redis + Postgres/Local Storage)
 
 This is the canonical backend contract for all agents and frontend integrations.
 
 ## Runtime stack
 - API: FastAPI (`backend/main.py`)
 - Event bus: Redis Pub/Sub
-- Storage: Actian adapter (local edge mode + optional cloud sync)
+- Storage: Postgres/local storage adapter (local edge mode + optional cloud sync)
 - Realtime updates: WebSocket (`/ws/{application_id}`)
 
 ## API contracts
@@ -56,12 +56,12 @@ Reference map: `agents/shared/event_contract.md`
 4. Frontend connects over REST + native WebSocket
 
 ## Storage behavior
-`backend/storage/router.py` always returns the Actian adapter.
+`backend/storage/router.py` returns the configured storage adapter.
 Configuration is controlled with:
-- `ACTIAN_MODE=edge|cloud`
-- `ACTIAN_LOCAL_DIR`
-- `ACTIAN_CLOUD_API_URL`
-- `ACTIAN_API_KEY`
+- `STORAGE_MODE=edge|cloud`
+- `LOCAL_STORAGE_DIR`
+- `CLOUD_API_URL`
+- `CLOUD_API_KEY`
 
 ## Security baseline
 - Never commit `.env` with real keys

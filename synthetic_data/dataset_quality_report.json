@@ -1,0 +1,35 @@
+{
+    "status": "WARN",
+    "total_validated": 10000,
+    "checks": {
+        "math_coherence": {
+            "pass": 10000,
+            "fail": 0
+        },
+        "balance_sheet_identity": {
+            "pass": 10000,
+            "fail": 0
+        },
+        "gst_consistency": {
+            "pass": 9580,
+            "fail": 420
+        },
+        "bank_credits_consistency": {
+            "pass": 9998,
+            "fail": 2
+        }
+    },
+    "outlier_count": 68,
+    "outliers": [
+        "company_09434",
+        "company_07778",
+        "company_00802",
+        "company_02096",
+        "company_02327",
+        "company_09156",
+        "company_00048",
+        "company_01475",
+        "company_09291",
+        "company_04335"
+    ]
+}

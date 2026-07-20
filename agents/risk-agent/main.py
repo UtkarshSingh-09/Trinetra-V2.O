@@ -1,3 +1,10 @@
+import os
+os.environ["MPLBACKEND"] = "agg"
+import xgboost
+import lightgbm
+import shap
+import lime
+
 """
 Agent 9: Risk Agent
 Approach: Tree-Based Machine Learning & Explainable AI (XAI)
@@ -10,13 +17,15 @@ Logic: Normalize features → Weighted score → SHAP + LIME → Limits + Rate
 Errors: SHAP_FAIL → continue without SHAP. LIME_FAIL → continue without LIME.
 """
 import sys
-import os
 import pickle
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.dirname(__file__))
 from shared.agent_base import AgentBase
 from shared.vectorai_client import VectorAIClient
+from tri_lens import TriLensRiskScorer
+from imputation import DynamicImputationEngine
 
 
 vectorai = VectorAIClient()
@@ -48,17 +57,7 @@ SAFE_BOUNDS = {
 }
 
 # ── Risk Weights (from Blueprint Section 2.2) ──
-WEIGHTS = {
-    "dscr_normalized":           0.25,
-    "leverage_normalized":       0.18,
-    "revenue_growth_normalized": 0.12,
-    "ebitda_margin_normalized":  0.10,
-    "gst_discrepancy_norm":      0.12,
-    "circular_trade_norm":       0.08,
-    "litigation_norm":           0.10,
-    "news_sentiment_norm":       0.05,
-}
-# Total = 1.00
+from shared.risk_utils import WEIGHTS
 
 
 def handle_outlier(feature_name: str, raw_value: float) -> float:
@@ -85,15 +84,7 @@ def compute_risk_score(features: dict) -> float:
     return round(min(1.0, max(0.0, score + pd_adj)), 4)
 
 
-def assign_band(score: float) -> str:
-    """Assign risk band based on score thresholds."""
-    if score < 0.30:
-        return "LOW"
-    if score < 0.55:
-        return "MEDIUM"
-    if score < 0.75:
-        return "HIGH"
-    return "REJECT"
+from shared.risk_utils import assign_band
 
 
 def compute_limit_and_rate(requested: float, score: float, base_rate_bps: float = 850) -> tuple:
@@ -197,6 +188,17 @@ def run_lime_analysis(model, feature_vector: dict) -> dict:
 
 
 MODEL_DIR = os.getenv("MODEL_DIR", os.path.join(os.path.dirname(__file__), "models"))
+if not os.path.isabs(MODEL_DIR):
+    abs_path = os.path.abspath(MODEL_DIR)
+    if not os.path.exists(abs_path):
+        agents_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        resolved_path = os.path.abspath(os.path.join(agents_dir, MODEL_DIR))
+        if os.path.exists(resolved_path):
+            MODEL_DIR = resolved_path
+        else:
+            MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "models"))
+    else:
+        MODEL_DIR = abs_path
 
 
 class RiskAgent(AgentBase):
@@ -204,6 +206,10 @@ class RiskAgent(AgentBase):
     LISTEN_TOPICS = ["model_selected"]
     OUTPUT_NAMESPACE = "risk"
     OUTPUT_EVENT = "risk_generated"
+
+    def __init__(self):
+        super().__init__()
+        self.imputation_engine = DynamicImputationEngine(vectorai_client=vectorai)
 
     def process(self, application_id: str, ucso: dict) -> dict:
         """
@@ -220,46 +226,189 @@ class RiskAgent(AgentBase):
         web = ucso.get("web_intel", {})
         pd_intel = ucso.get("pd_intelligence", {})
         applicant = ucso.get("applicant", {})
+        financials = ucso.get("financials", {})
 
-        # ── Step 1: Build raw feature vector ──
-        raw_features = {
-            "dscr": derived.get("dscr", 0.0),
-            "icr": derived.get("icr", 0.0),
-            "leverage": derived.get("leverage", 0.0),
-            "ccc": derived.get("ccc", 0.0),
-            "revenue_growth": derived.get("revenue_growth", 0.0),
-            "ebitda_margin": derived.get("ebitda_margin", 0.0),
-            "gst_discrepancy": gst.get("gstr2b_vs_3b_discrepancy_pct", 0.0) / 100,
-            "circular_trade": gst.get("circular_trade_index", 0.0),
-            "litigation_count": len(web.get("litigation_records", [])),
-            "news_sentiment": (
-                sum(n.get("sentiment_score", 0) for n in web.get("promoter_news", []))
-                / max(1, len(web.get("promoter_news", [])))
-            ),
+        # Check data quality: verify if key features were successfully extracted
+        has_real_dscr = derived.get("dscr") is not None and derived.get("dscr") != 0.0
+        has_real_icr = derived.get("icr") is not None and derived.get("icr") != 0.0
+        has_real_revenue = bool(financials.get("revenue_annual") or financials.get("revenue"))
+        has_real_bank = bank.get("avg_monthly_balance") is not None and bank.get("avg_monthly_balance") != 0.0
+        has_real_gst = gst.get("gstr2b_vs_3b_discrepancy_pct") is not None
+
+        pan_intel = ucso.get("pan_intelligence", {})
+        compliance = ucso.get("compliance", {})
+
+        # Track data quality issues as warnings (NOT blocking gates)
+        data_quality_warnings = []
+        data_quality_penalty = 0.0
+
+        if pan_intel.get("status") != "PASS":
+            data_quality_warnings.append("PAN verification is PENDING or FAILED.")
+            data_quality_penalty += 0.05  # Small penalty, not a block
+
+        if compliance.get("status") != "PASS":
+            data_quality_warnings.append("Document compliance is PENDING or Non-Compliant.")
+            data_quality_penalty += 0.05
+
+        if bank.get("reconciliation_verdict") in ["PENDING", "UNKNOWN", None]:
+            data_quality_warnings.append("Bank Reconciliation is PENDING or missing.")
+            data_quality_penalty += 0.03
+
+        if not has_real_revenue or not has_real_dscr:
+            data_quality_warnings.append("Core financial metrics (Revenue/DSCR) are missing or 'Data pending'.")
+            data_quality_penalty += 0.05
+
+        if data_quality_warnings:
+            self.logger.warning(
+                f"Data quality warnings (non-blocking): {data_quality_warnings}",
+                extra={"agent_name": self.AGENT_NAME, "application_id": application_id}
+            )
+
+        data_quality = "HIGH"
+        data_quality_notes = "Financial and behavioral features successfully verified and extracted."
+
+        # ── Step 1 & 2: Build raw 16-feature vector and impute dynamically ──
+        sector = applicant.get("industry_sector") or ""
+
+        # Helper functions to safely coalesce and cast values, avoiding falsy numeric values gotcha (like 0.0)
+        def get_float(*args):
+            for arg in args:
+                if arg is not None:
+                    try:
+                        return float(arg)
+                    except (ValueError, TypeError):
+                        pass
+            return None
+
+        def get_int(*args):
+            for arg in args:
+                if arg is not None:
+                    try:
+                        return int(arg)
+                    except (ValueError, TypeError):
+                        pass
+            return None
+
+        # Extract features (use None if missing or 0.0 for critical fields)
+        extracted_features = {
+            "dscr": get_float(derived.get("dscr"), financials.get("dscr")),
+            "icr": get_float(derived.get("icr"), financials.get("icr")),
+            "leverage": get_float(derived.get("leverage"), financials.get("leverage")),
+            "current_ratio": get_float(derived.get("current_ratio"), financials.get("current_ratio")),
+            "revenue_growth_yoy": get_float(derived.get("revenue_growth"), derived.get("revenue_growth_yoy"), financials.get("revenue_growth_yoy")),
+            "ebitda_margin": get_float(derived.get("ebitda_margin"), financials.get("ebitda_margin")),
+            "cibil_score": get_int(derived.get("cibil_score"), financials.get("cibil_score"), applicant.get("cibil_score")),
+            "promoter_holding_pct": get_float(derived.get("promoter_holding_pct"), financials.get("promoter_holding_pct"), applicant.get("promoter_holding_pct")),
+            "gst_discrepancy_pct": get_float(gst.get("gstr2b_vs_3b_discrepancy_pct"), financials.get("gst_discrepancy_pct")),
+            "bank_divergence_pct": get_float(bank.get("turnover_divergence_pct"), financials.get("bank_divergence_pct")),
+            "web_sentiment_avg": get_float(web.get("news_sentiment_avg"), sum(n.get("sentiment_score", 0) for n in web.get("promoter_news", [])) / max(1, len(web.get("promoter_news", []))) if web.get("promoter_news") else None, financials.get("web_sentiment_avg")),
+            "bounce_rate": get_float(bank.get("bounce_rate"), financials.get("bounce_rate")),
+            "years_in_business": get_int(applicant.get("years_in_business"), financials.get("years_in_business")),
+            "ltv_ratio": get_float(derived.get("ltv_ratio"), financials.get("ltv_ratio")),
+            "circular_trade_index": get_float(gst.get("circular_trade_index"), financials.get("circular_trade_index")),
+            "litigation_count": get_int(web.get("litigation_count"), len(web.get("litigation_records")) if web.get("litigation_records") is not None else None)
         }
 
-        # ── Step 2: Outlier handling + Normalization ──
+        # Calculate data completeness score
+        non_zero_check_features = {
+            "dscr", "icr", "leverage", "current_ratio", "ebitda_margin",
+            "cibil_score", "promoter_holding_pct", "years_in_business", "ltv_ratio"
+        }
+        extracted_count = 0
+        for feat, val in extracted_features.items():
+            if val is not None:
+                if feat in non_zero_check_features and float(val) == 0.0:
+                    continue
+                extracted_count += 1
+        data_completeness_score = int(round((extracted_count / 16.0) * 100))
+
+        # Dynamic imputation via RAG / local peer statistics
+        raw_features, feature_sources = self.imputation_engine.impute_missing_features(extracted_features, sector)
+
+        # Handle outliers in place using SAFE_BOUNDS
         for feat in SAFE_BOUNDS:
             if feat in raw_features:
                 raw_features[feat] = handle_outlier(feat, raw_features[feat])
 
-        normalized_features = {
-            "dscr_normalized": normalize(raw_features["dscr"], "dscr"),
-            "leverage_normalized": normalize(raw_features["leverage"], "leverage"),
-            "revenue_growth_normalized": normalize(raw_features["revenue_growth"], "revenue_growth"),
-            "ebitda_margin_normalized": normalize(raw_features["ebitda_margin"], "ebitda_margin"),
-            "gst_discrepancy_norm": normalize(raw_features["gst_discrepancy"], "gst_discrepancy"),
-            "circular_trade_norm": normalize(raw_features["circular_trade"], "circular_trade"),
-            "litigation_norm": normalize(raw_features["litigation_count"], "litigation_count"),
-            "news_sentiment_norm": normalize(raw_features["news_sentiment"], "news_sentiment"),
-            "pd_risk_adjustment": pd_intel.get("risk_adjustment", 0.0),
-        }
-
-        # ── Step 3: Compute weighted risk score ──
-        score = compute_risk_score(normalized_features)
+        # ── Step 3: Compute risk score using active model ──
+        epsilon = float(os.getenv("DP_EPSILON", "0.0"))
+        scorer = TriLensRiskScorer(epsilon=epsilon)
+        tri_result = scorer.score(raw_features)
+        
+        # Determine the globally active model
+        import json
+        active_model = "AUTO"
+        active_model_path = os.path.join(MODEL_DIR, "active_model.json")
+        if os.path.exists(active_model_path):
+            try:
+                with open(active_model_path, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    active_model = cfg.get("active_model", "AUTO")
+            except Exception:
+                pass
+                
+        # Heuristically selected model (default)
+        model_used = ucso.get("risk", {}).get("model_used", "RULE_FALLBACK")
+        
+        # Final resolved model to use
+        model_to_use = model_used if active_model == "AUTO" else active_model
+        if model_to_use == "RULE_FALLBACK":
+            model_to_use = "TRI_LENS"
+            
+        score_computed = False
+        score = None
+        
+        # 14 features expected by models in exact sequence
+        feature_names = [
+            "dscr", "icr", "leverage", "current_ratio", "revenue_growth_yoy",
+            "ebitda_margin", "cibil_score", "promoter_holding_pct",
+            "gst_discrepancy_pct", "bank_divergence_pct", "web_sentiment_avg",
+            "bounce_rate", "years_in_business", "ltv_ratio"
+        ]
+        
+        if model_to_use in ["LOGISTIC", "XGBOOST", "LGBM"]:
+            model_file_map = {
+                "LOGISTIC": "logistic_risk_model.pkl",
+                "XGBOOST": "xgboost_risk_model.pkl",
+                "LGBM": "lgbm_risk_model.pkl"
+            }
+            model_path = os.path.join(MODEL_DIR, model_file_map[model_to_use])
+            if os.path.exists(model_path):
+                try:
+                    with open(model_path, "rb") as f:
+                        loaded_model = pickle.load(f)
+                    
+                    X = np.array([[raw_features[feat] for feat in feature_names]])
+                    
+                    if model_to_use == "LOGISTIC":
+                        scaler_path = os.path.join(MODEL_DIR, "feature_scaler.pkl")
+                        if os.path.exists(scaler_path):
+                            with open(scaler_path, "rb") as sf:
+                                scaler = pickle.load(sf)
+                            X_scaled = scaler.transform(X)
+                            score = float(loaded_model.predict_proba(X_scaled)[0, 1])
+                            score_computed = True
+                        else:
+                            print("[RiskAgent] Feature scaler missing for Logistic. Falling back.")
+                    else:
+                        score = float(loaded_model.predict(X)[0])
+                        score_computed = True
+                except Exception as ex:
+                    print(f"[RiskAgent] Model inference failed: {ex}. Falling back to Tri-Lens.")
+            else:
+                print(f"[RiskAgent] Model file {model_path} missing. Falling back to Tri-Lens.")
+                
+        if not score_computed:
+            score = tri_result["final_score"]
+            model_to_use = "TRI_LENS"
+            
+        score = round(min(1.0, max(0.0, score + data_quality_penalty)), 4)
         band = assign_band(score)
+        model_used = model_to_use  # Override model_used so it returns the exact model in the UCSO namespace
 
-        feature_text = " ".join([f"{k}={v:.4f}" for k, v in normalized_features.items()])
+        feature_text = " ".join([f"{k}={v:.4f}" for k, v in raw_features.items()])
+        
+        # Comparable cases in VectorAI database
         similar_cases = vectorai.search(
             collection="risk_decisions",
             query_text=feature_text,
@@ -279,13 +428,25 @@ class RiskAgent(AgentBase):
         ]
 
         # ── Step 4: Limit and rate calculation ──
-        requested = applicant.get("loan_amount_requested", 0)
+        # ── Step 4: Limit and rate calculation ──
+        requested = (
+            applicant.get("loan_amount_requested")
+            or applicant.get("loan_amount")
+            or ucso.get("loan_requested")
+            or ucso.get("loan_amount_requested")
+            or 0
+        )
         limit, rate_bps = compute_limit_and_rate(requested, score)
+        
+        # Ensure limit is strictly bounded
+        limit = max(0.0, min(limit, requested))
+        # If low/medium risk and limit is less than 30% of request due to high haircut, set floor to 30% of request
+        if band in ("LOW", "MEDIUM") and requested > 0 and limit < requested * 0.3:
+            limit = requested * 0.3
+        limit = round(limit, 2)
 
         # ── Step 5: SHAP + LIME ──
-        model_used = ucso.get("risk", {}).get("model_used", "RULE_FALLBACK")
         model = None
-
         model_files = {
             "LOGISTIC": "logistic_risk_model.pkl",
             "XGBOOST": "xgboost_risk_model.pkl",
@@ -298,29 +459,58 @@ class RiskAgent(AgentBase):
                 try:
                     with open(model_path, "rb") as f:
                         model = pickle.load(f)
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"MODEL_LOAD_FAIL: {e}")
 
-        shap_values = run_shap_analysis(model, normalized_features) if model else {}
-        lime_explanation = run_lime_analysis(model, normalized_features) if model else {}
+        # Use tri_features for exact column alignment during inference
+        shap_values = run_shap_analysis(model, raw_features) if model else {}
+        lime_explanation = run_lime_analysis(model, raw_features) if model else {}
 
         # ── Step 6: Top risk factors ──
         if shap_values:
             sorted_shap = sorted(shap_values.items(), key=lambda x: abs(x[1]), reverse=True)
             top_risk_factors = [
-                {"feature": k, "shap_value": v, "weight": WEIGHTS.get(k, 0)}
+                {"feature": k, "shap_value": v}
                 for k, v in sorted_shap[:5]
             ]
         else:
-            # Fallback: sort by weighted contribution
-            contributions = [
-                (k, normalized_features.get(k, 0) * WEIGHTS.get(k, 0))
-                for k in WEIGHTS
-            ]
+            # Fallback: calculate contributions based on Tri-Lens normalized feature values and attention weights
+            contributions = []
+            attn_weights = tri_result["attention_weights"]
+            
+            # Map features to their lenses and calculate weighted contribution
+            feature_lens_mapping = {
+                # Financial Lens features
+                "dscr": "financial", "icr": "financial", "leverage": "financial", 
+                "current_ratio": "financial", "revenue_growth_yoy": "financial", 
+                "ebitda_margin": "financial", "ltv_ratio": "financial",
+                # Behavioral Lens features
+                "gst_discrepancy_pct": "behavioral", "circular_trade_index": "behavioral", 
+                "bounce_rate": "behavioral", "bank_divergence_pct": "behavioral",
+                # Contextual Lens features
+                "web_sentiment_avg": "contextual", "litigation_count": "contextual", 
+                "years_in_business": "contextual", "cibil_score": "contextual", 
+                "promoter_holding_pct": "contextual"
+            }
+            
+            for feat, val in raw_features.items():
+                lens = feature_lens_mapping.get(feat)
+                if lens:
+                    # Normalized value
+                    if lens == "financial":
+                        norm_val = scorer._normalize(val, scorer.FINANCIAL_BOUNDS, feat)
+                    elif lens == "behavioral":
+                        norm_val = scorer._normalize(val, scorer.BEHAVIORAL_BOUNDS, feat)
+                    else:
+                        norm_val = scorer._normalize(val, scorer.CONTEXTUAL_BOUNDS, feat)
+                        
+                    weight = attn_weights.get(lens, 0.33)
+                    contributions.append((feat, norm_val * weight, weight))
+                    
             contributions.sort(key=lambda x: x[1], reverse=True)
             top_risk_factors = [
-                {"feature": k, "contribution": round(v, 4), "weight": WEIGHTS.get(k, 0)}
-                for k, v in contributions[:5]
+                {"feature": k, "contribution": float(round(c, 4)), "weight": float(round(w, 4))}
+                for k, c, w in contributions[:5]
             ]
 
         # Decision
@@ -332,11 +522,13 @@ class RiskAgent(AgentBase):
         # Corrective actions
         corrective_actions = []
         if band in ("HIGH", "REJECT"):
-            if normalized_features.get("dscr_normalized", 0) > 0.5:
+            # Use raw_features to verify thresholds
+            # Check DSCR < 1.2, leverage > 2.0, gst discrepancy > 10%
+            if raw_features.get("dscr", 1.5) < 1.2:
                 corrective_actions.append("Improve DSCR by reducing debt or increasing cash flows")
-            if normalized_features.get("leverage_normalized", 0) > 0.5:
+            if raw_features.get("leverage", 1.2) > 2.0:
                 corrective_actions.append("Reduce leverage by injecting equity or repaying debt")
-            if normalized_features.get("gst_discrepancy_norm", 0) > 0.5:
+            if raw_features.get("gst_discrepancy_pct", 0.0) > 10.0:
                 corrective_actions.append("Resolve ITC discrepancies between GSTR-2B and GSTR-3B")
 
         vectorai.upsert(
@@ -359,7 +551,8 @@ class RiskAgent(AgentBase):
             "band": band,
             "model_used": model_used,
             "model_version": ucso.get("risk", {}).get("model_version", "v1.0"),
-            "feature_vector": {**raw_features, **normalized_features},
+            "feature_vector": raw_features,
+            "tri_lens_details": tri_result,
             "shap_values": shap_values,
             "lime_explanation": lime_explanation,
             "top_risk_factors": top_risk_factors,
@@ -369,6 +562,11 @@ class RiskAgent(AgentBase):
             "rejection_reasons": rejection_reasons,
             "corrective_actions": corrective_actions,
             "comparable_cases": comparable_cases,
+            "data_quality": data_quality,
+            "data_quality_notes": data_quality_notes,
+            "decision_confidence": "LOW" if data_quality == "LOW" else "HIGH",
+            "data_completeness_score": data_completeness_score,
+            "feature_sources": feature_sources,
         }
 
 

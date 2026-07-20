@@ -59,3 +59,16 @@ class FileUploadResponse(BaseModel):
     storage_path: str
     file_url: str
     status: str = "UPLOADED"
+
+
+from typing import Literal
+
+class FeedbackRequest(BaseModel):
+    actual_outcome: Literal["PAID_BACK", "DEFAULTED"]
+    notes: Optional[str] = ""
+
+
+class PDTranscriptRequest(BaseModel):
+    interviewer: Optional[str] = "Officer"
+    transcript: str
+    pd_date: Optional[str] = None

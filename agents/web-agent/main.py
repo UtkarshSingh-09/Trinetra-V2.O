@@ -1,18 +1,19 @@
 """
 Agent 6: Web Intelligence Agent
 Approach: RAG + Sentiment + External API fallback
-Tools: Actian VectorAI REST, sentence-transformers (all-MiniLM-L6-v2), vaderSentiment
+Tools: Qdrant REST, sentence-transformers (all-MiniLM-L6-v2), vaderSentiment
 
 Trigger: gst_completed, bank_recon_completed
 Reads: applicant, gst_analysis
 Writes: web_intel
-Logic: Query Actian VectorAI KB for news/litigation/RBI circulars. Score with VADER.
+Logic: Query Qdrant KB for news/litigation/RBI circulars. Score with VADER.
        Surepass eCourt API for litigation. Credibility filter ≥2.
 Errors: SCRAPE_TIMEOUT → use KB snapshot. LOW_CONFIDENCE (<0.75 cosine) → discard.
 """
 import sys
 import os
 from datetime import datetime, timezone
+from bs4 import BeautifulSoup
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from shared.agent_base import AgentBase
@@ -21,8 +22,6 @@ from shared.vectorai_client import VectorAIClient
 import requests as http_requests
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-SUREPASS_TOKEN = os.getenv("SUREPASS_TOKEN", "")
-SUREPASS_ECOURT_URL = "https://kyc-api.surepass.io/api/v1/ecourt/cnr-details"
 SIMILARITY_THRESHOLD = 0.75
 
 analyzer = SentimentIntensityAnalyzer()
@@ -62,15 +61,15 @@ def aggregate_news_sentiment(articles: list) -> float:
     )
 
 
-# ── Actian VectorAI RAG Queries ──
-def query_actian_collection(
+# ── Qdrant Vector DB RAG Queries ──
+def query_qdrant_collection(
     collection: str,
     query_text: str,
     top_k: int = 10,
     min_score: float = SIMILARITY_THRESHOLD,
 ) -> list[dict]:
     """
-    Query Actian VectorAI and return metadata payloads.
+    Query Qdrant and return metadata payloads.
     """
     results = vectorai.search(
         collection=collection,
@@ -83,9 +82,9 @@ def query_actian_collection(
 
 def fetch_news(company_name: str, industry: str) -> list:
     """
-    Fetch and score news articles from Actian VectorAI news_articles collection.
+    Fetch and score news articles from Qdrant news_articles collection.
     """
-    hits = query_actian_collection(
+    hits = query_qdrant_collection(
         "news_articles",
         f"{company_name} {industry} risk scandal fraud",
         top_k=10,
@@ -110,45 +109,71 @@ def fetch_news(company_name: str, industry: str) -> list:
     return scored_news
 
 
+def search_india_kanoon(company_name: str) -> list:
+    """
+    Queries India Kanoon search for public court case listings (free alternative).
+    Falls back to Qdrant litigation database if blocked/offline.
+    """
+    if not company_name:
+        return []
+        
+    url = f"https://indiankanoon.org/search/?formInput={company_name}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+    }
+    
+    records = []
+    try:
+        resp = http_requests.get(url, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, "html.parser")
+            results = soup.find_all("div", {"class": "result"})
+            for i, res in enumerate(results[:5]): # Limit to top 5 cases
+                title_elem = res.find("a")
+                desc_elem = res.find("div", {"class": "headline"})
+                
+                title = title_elem.text.strip() if title_elem else "Case Record"
+                desc = desc_elem.text.strip() if desc_elem else ""
+                
+                severity = "MEDIUM"
+                if "criminal" in desc.lower() or "cheque bounce" in desc.lower() or "fraud" in desc.lower():
+                    severity = "HIGH"
+                elif "civil" in desc.lower() or "commercial" in desc.lower():
+                    severity = "MEDIUM"
+                else:
+                    severity = "LOW"
+                    
+                records.append({
+                    "case_no": f"IK-{hash(title) % 10000000:07d}",
+                    "court": "Various Indian Courts" if "court" not in desc.lower() else desc.split("court")[0].strip()[-30:],
+                    "case_type": "Public Case Listing",
+                    "status": "PENDING" if "pending" in desc.lower() else "DECIDED",
+                    "severity": severity,
+                    "source": "INDIA_KANOON"
+                })
+            return records
+    except Exception as e:
+        print(f"INDIA_KANOON_EXCEPTION: {e}")
+        
+    return []
+
 def fetch_litigation(company_name: str, pan: str) -> list:
     """
-    Fetch litigation records via Surepass eCourt API.
-    Falls back to Actian VectorAI litigation_records collection.
+    Fetch litigation records via India Kanoon search.
+    Falls back to Qdrant litigation_records collection.
     """
     records = []
 
-    # Try Surepass eCourt API
-    if SUREPASS_TOKEN and pan:
-        try:
-            resp = http_requests.post(
-                SUREPASS_ECOURT_URL,
-                json={"id_number": pan},
-                headers={"Authorization": f"Bearer {SUREPASS_TOKEN}"},
-                timeout=10,
-            )
-            resp.raise_for_status()
-            cases = resp.json().get("data", {}).get("cases", [])
-
-            for case in cases:
-                severity = "HIGH" if "criminal" in case.get("case_type", "").lower() else (
-                    "MEDIUM" if "civil" in case.get("case_type", "").lower() else "LOW"
-                )
-                records.append({
-                    "case_no": case.get("cnr_number", ""),
-                    "court": case.get("court_name", ""),
-                    "case_type": case.get("case_type", ""),
-                    "status": case.get("status", ""),
-                    "severity": severity,
-                    "source": "SUREPASS",
-                })
-
+    # Try India Kanoon
+    try:
+        records = search_india_kanoon(company_name)
+        if records:
             return records
+    except Exception:
+        pass
 
-        except Exception:
-            pass
-
-    # Fallback: Actian litigation records collection
-    hits = query_actian_collection(
+    # Fallback: Qdrant litigation records collection
+    hits = query_qdrant_collection(
         "litigation_records",
         company_name,
         top_k=10,
@@ -169,9 +194,9 @@ def fetch_litigation(company_name: str, pan: str) -> list:
 
 def fetch_regulatory_flags(industry: str) -> list:
     """
-    Query Actian VectorAI rbi_circulars collection for sector-specific headwinds.
+    Query Qdrant rbi_circulars collection for sector-specific headwinds.
     """
-    hits = query_actian_collection(
+    hits = query_qdrant_collection(
         "rbi_circulars",
         f"{industry} regulation risk",
         top_k=5,
@@ -196,7 +221,7 @@ class WebIntelligenceAgent(AgentBase):
 
     def process(self, application_id: str, ucso: dict) -> dict:
         """
-        Full RAG pipeline: query Actian VectorAI for news, litigation, and RBI circulars.
+        Full RAG pipeline: query Qdrant for news, litigation, and RBI circulars.
         Score sentiment using VADER. Return structured web intelligence.
         """
         applicant = ucso.get("applicant", {})
@@ -206,7 +231,7 @@ class WebIntelligenceAgent(AgentBase):
 
         # Fetch news with sentiment scoring
         self.logger.info(
-            f"Querying Actian VectorAI for news about '{company_name}'",
+            f"Querying Qdrant for news about '{company_name}'",
             extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
         )
         promoter_news = fetch_news(company_name, industry)

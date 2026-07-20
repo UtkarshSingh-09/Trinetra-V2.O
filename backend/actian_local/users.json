@@ -1,0 +1,26 @@
+{
+  "alpha_underwriter": {
+    "username": "alpha_underwriter",
+    "password_hash": "207ca5bf973ca67d6ae14f51b3fe81e97e519cf6fbb2eebc7df87acf09ff8345",
+    "salt": "f94e14c23e3807ea4bdf4f160b1138d5",
+    "tenant_id": "tenant_alpha",
+    "role": "underwriter",
+    "name": "Alpha Underwriter"
+  },
+  "beta_underwriter": {
+    "username": "beta_underwriter",
+    "password_hash": "4a228dec05e337bd5a7a91cf080319b6fbec5387851113053de2313dc4413c40",
+    "salt": "8c9435ed1f4867739d4b3d307be8a2bd",
+    "tenant_id": "tenant_beta",
+    "role": "underwriter",
+    "name": "Beta Underwriter"
+  },
+  "admin": {
+    "username": "admin",
+    "password_hash": "b5f8c268a72832faedf525b2db0aa231ea97ada2bb0e3c6f9eea74c64df413a8",
+    "salt": "7e18157345a4ca4c91e6f9af8d871516",
+    "tenant_id": "tenant_admin",
+    "role": "admin",
+    "name": "Super Admin"
+  }
+}

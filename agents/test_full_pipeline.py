@@ -401,6 +401,8 @@ def run_pipeline():
     }
 
     output_path = cam_mod.generate_cam_document(ucso)
+    if isinstance(output_path, tuple):
+        output_path = output_path[0]
     file_size = os.path.getsize(output_path)
     data_point("CAM File", output_path)
     data_point("File Size", f"{file_size:,} bytes ({file_size/1024:.1f} KB)")

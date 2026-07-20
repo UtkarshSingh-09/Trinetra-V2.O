@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class StorageClient(ABC):
     @abstractmethod
-    def create_application(self, applicant_data: dict) -> dict:
+    def create_application(self, applicant_data: dict, tenant_id: str = "tenant_alpha") -> dict:
         raise NotImplementedError
 
     @abstractmethod

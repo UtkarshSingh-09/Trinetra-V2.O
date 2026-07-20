@@ -21,14 +21,13 @@ from shared.vectorai_client import VectorAIClient
 vectorai = VectorAIClient()
 
 
-def compute_dscr(net_operating_income: float, total_debt_service: float) -> float:
+def compute_dscr(net_operating_income: float, total_debt_service: float) -> float | None:
     """
     DSCR = Net Operating Income / Total Debt Service
     Total Debt Service = Interest Expense + Principal Repayment
     """
     if total_debt_service == 0:
-        # Use a realistic fallback instead of an unrealistic infinite DSCR.
-        return 1.8
+        return None
     return round(net_operating_income / total_debt_service, 4)
 
 
@@ -39,8 +38,8 @@ def compute_stressed_dscr(
     principal_repayment: float,
     revenue_shock: float = 0.0,
     rate_shock_bps: float = 0.0,
-    vacancy_factor: float = 0.05,
-) -> float:
+    vacancy_factor: float = 0.0,
+) -> float | None:
     """
     Compute DSCR under stress conditions according to PDF formulas.
 
@@ -58,7 +57,7 @@ def compute_stressed_dscr(
     effective_gross_income = gross_income * (1 - vacancy_factor)
     
     # 2. Subtract fixed operating expenses to get Stressed NOI
-    stressed_noi = max(0.0, effective_gross_income - operating_expenses)
+    stressed_noi = effective_gross_income - operating_expenses
 
     # 3. Apply Interest Rate Shock (simplified approximation: (Current Interest) * (1 + (bps/10000)/base_rate))
     # Assuming a base rate of 10% (0.10) for calculation purposes if base rate is unknown
@@ -73,8 +72,10 @@ def compute_stressed_dscr(
     return compute_dscr(stressed_noi, total_debt_service)
 
 
-def assign_stress_verdict(dscr: float) -> str:
+def assign_stress_verdict(dscr: float | None) -> str:
     """Assign verdict based on stressed DSCR."""
+    if dscr is None:
+        return "DATA_INSUFFICIENT"
     if dscr >= 1.25:
         return "SURVIVES"
     elif dscr >= 1.0:
@@ -144,7 +145,7 @@ class StressAgent(AgentBase):
                     "verdict": assign_stress_verdict(dscr_rev_shock),
                 },
                 {
-                    "name": "Rate+2%",
+                    "name": "Rate+2% (Assumes 100% Floating Debt)",
                     "dscr": dscr_rate_shock,
                     "verdict": assign_stress_verdict(dscr_rate_shock),
                 },
@@ -155,7 +156,8 @@ class StressAgent(AgentBase):
                 },
             ]
 
-            worst_dscr = min(s["dscr"] for s in scenarios)
+            valid_dscrs = [s["dscr"] for s in scenarios if s["dscr"] is not None]
+            worst_dscr = min(valid_dscrs) if valid_dscrs else None
             survival_verdict = assign_stress_verdict(worst_dscr)
 
             self.logger.info(
@@ -166,10 +168,16 @@ class StressAgent(AgentBase):
                 extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
             )
 
+            worst_dscr_str = f"{worst_dscr:.4f}" if worst_dscr is not None else "N/A"
+            dscr_rev_shock_str = f"{dscr_rev_shock:.4f}" if dscr_rev_shock is not None else "N/A"
+            dscr_rate_shock_str = f"{dscr_rate_shock:.4f}" if dscr_rate_shock is not None else "N/A"
+            dscr_combined_str = f"{dscr_combined:.4f}" if dscr_combined is not None else "N/A"
+            base_dscr_str = f"{base_dscr:.4f}" if base_dscr is not None else "N/A"
+
             stress_text = (
-                f"Stress test: worst_dscr={worst_dscr:.4f}, verdict={survival_verdict}. "
-                f"Scenarios: Rev-20% DSCR={dscr_rev_shock:.4f}, "
-                f"Rate+2% DSCR={dscr_rate_shock:.4f}, Combined={dscr_combined:.4f}"
+                f"Stress test: worst_dscr={worst_dscr_str}, verdict={survival_verdict}. "
+                f"Scenarios: Rev-20% DSCR={dscr_rev_shock_str}, "
+                f"Rate+2% DSCR={dscr_rate_shock_str}, Combined={dscr_combined_str}"
             )
             vectorai.upsert(
                 collection="stress_scenarios",
@@ -178,9 +186,9 @@ class StressAgent(AgentBase):
                 metadata={
                     "application_id": application_id,
                     "agent": self.AGENT_NAME,
-                    "worst_dscr": worst_dscr,
+                    "worst_dscr": worst_dscr if worst_dscr is not None else -1.0,
                     "survival_verdict": survival_verdict,
-                    "base_dscr": base_dscr,
+                    "base_dscr": base_dscr if base_dscr is not None else -1.0,
                 },
             )
 

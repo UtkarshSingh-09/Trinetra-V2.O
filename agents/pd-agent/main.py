@@ -25,6 +25,10 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 vectorai = VectorAIClient()
 
+# Ollama local LLM setup
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
+
 # LLM Evaluation Prompt (strict JSON output)
 PD_EVALUATION_PROMPT = """You are a senior credit risk officer at an Indian bank. 
 You are reading the transcript of a Personal Discussion (PD) with a loan applicant.
@@ -125,6 +129,83 @@ def evaluate_transcript_with_groq(transcript: str) -> dict:
         }
 
 
+def ensure_ollama_model(ollama_url: str, model: str):
+    """
+    Check if the Ollama model exists locally; if not, initiate a pull request.
+    This runs synchronously to ensure the model is ready before execution continues.
+    """
+    import logging
+    logger = logging.getLogger("ollama-initializer")
+    
+    try:
+        # Check existing models
+        resp = http_requests.get(f"{ollama_url}/api/tags", timeout=5)
+        if resp.status_code == 200:
+            models = [m.get("name") for m in resp.json().get("models", [])]
+            if model in models or f"{model}:latest" in models:
+                return
+        
+        # If not found, pull it
+        logger.info(f"Model {model} not found in Ollama. Pulling model...")
+        pull_payload = {"name": model, "stream": False}
+        pull_resp = http_requests.post(f"{ollama_url}/api/pull", json=pull_payload, timeout=300)
+        pull_resp.raise_for_status()
+        logger.info(f"Successfully pulled model {model}")
+    except Exception as e:
+        logger.error(f"Failed to check/pull Ollama model {model}: {e}")
+
+
+def evaluate_transcript_with_ollama(transcript: str) -> dict:
+    """Send the transcript to local Ollama for structured evaluation."""
+    ensure_ollama_model(OLLAMA_URL, OLLAMA_MODEL)
+    
+    payload = {
+        "model": OLLAMA_MODEL,
+        "messages": [
+            {"role": "system", "content": PD_EVALUATION_PROMPT},
+            {
+                "role": "user",
+                "content": f"Here is the Personal Discussion transcript:\n\n{transcript}",
+            },
+        ],
+        "stream": False,
+        "options": {
+            "temperature": 0.1
+        },
+        "format": "json"
+    }
+    
+    resp = http_requests.post(f"{OLLAMA_URL}/api/chat", json=payload, timeout=90)
+    resp.raise_for_status()
+    content = resp.json()["message"]["content"]
+    return json.loads(content)
+
+
+def evaluate_transcript(transcript: str) -> dict:
+    """Evaluate transcript using Groq or local Ollama fallback."""
+    if GROQ_API_KEY:
+        try:
+            # Only run if not placeholder or missing
+            return evaluate_transcript_with_groq(transcript)
+        except Exception as e:
+            print(f"Groq evaluation failed, trying local Ollama fallback: {e}")
+            
+    try:
+        return evaluate_transcript_with_ollama(transcript)
+    except Exception as e:
+        print(f"Ollama evaluation failed, using neutral defaults: {e}")
+        return {
+            "succession_risk": 0.5,
+            "capacity_risk": 0.5,
+            "integrity_risk": 0.5,
+            "overall_risk_adjustment": 0.0,
+            "qualitative_flags": [f"LLM_FAIL: {str(e)}"],
+            "entities_extracted": {},
+            "confidence": 0.0,
+            "reasoning": f"LLM evaluation failed (Groq + Ollama): {str(e)}",
+        }
+
+
 class PDTranscriptAgent(AgentBase):
     AGENT_NAME = "pd-transcript-agent"
     LISTEN_TOPICS = ["pd_submitted"]
@@ -147,7 +228,11 @@ class PDTranscriptAgent(AgentBase):
                 source_type = "AUDIO"
                 try:
                     file_url = f"{self.ucso_client.base_url}/api/files/download?s3_key={note['s3_key']}"
-                    resp = http_requests.get(file_url, timeout=60)
+                    headers = {}
+                    token = os.getenv("AGENT_SERVICE_TOKEN")
+                    if token:
+                        headers["X-Agent-Token"] = token
+                    resp = http_requests.get(file_url, headers=headers, timeout=60)
                     resp.raise_for_status()
 
                     with tempfile.NamedTemporaryFile(
@@ -201,15 +286,15 @@ class PDTranscriptAgent(AgentBase):
                 "pd_confidence": 0.0,
             }
 
-        # Evaluate transcript using Groq LLM (Llama 3 70b)
+        # Evaluate transcript using LLM (Groq or local Ollama)
         self.logger.info(
-            f"Evaluating PD transcript ({len(transcript_text)} chars) with Groq LLM",
+            f"Evaluating PD transcript ({len(transcript_text)} chars) with LLM",
             extra={
                 "agent_name": self.AGENT_NAME,
                 "application_id": application_id,
             },
         )
-        evaluation = evaluate_transcript_with_groq(transcript_text)
+        evaluation = evaluate_transcript(transcript_text)
 
         # Clamp risk adjustment to safe bounds [-0.10, +0.15]
         risk_adj = evaluation.get("overall_risk_adjustment", 0.0)

@@ -8,16 +8,26 @@ import sys
 from datetime import datetime, timezone
 
 
+from contextvars import ContextVar
+
+trace_id_var = ContextVar("trace_id", default="")
+
+
 class JSONFormatter(logging.Formatter):
     """Formats log records as structured JSON for easy parsing."""
 
     def format(self, record):
+        trace_id = trace_id_var.get()
+        message = record.getMessage()
+        if trace_id:
+            message = f"[Trace: {trace_id}] - {message}"
         log_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "agent": getattr(record, "agent_name", "unknown"),
             "application_id": getattr(record, "application_id", None),
-            "message": record.getMessage(),
+            "trace_id": trace_id or None,
+            "message": message,
         }
         if record.exc_info:
             log_entry["exception"] = self.formatException(record.exc_info)

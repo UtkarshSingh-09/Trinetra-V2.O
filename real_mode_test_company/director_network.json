@@ -1,0 +1,47 @@
+{
+    "company_directors": {
+        "Delta Enterprises Partnership Firm": [
+            "Suresh Mishra",
+            "Sunil Sinha"
+        ]
+    },
+    "director_companies": {
+        "Suresh Mishra": [
+            "Delta Enterprises Partnership Firm"
+        ],
+        "Sunil Sinha": [
+            "Delta Enterprises Partnership Firm"
+        ]
+    },
+    "graph": {
+        "nodes": [
+            {
+                "id": "Delta Enterprises Partnership Firm",
+                "type": "COMPANY",
+                "is_fraudulent": false
+            },
+            {
+                "id": "Suresh Mishra",
+                "type": "DIRECTOR",
+                "is_shared": false
+            },
+            {
+                "id": "Sunil Sinha",
+                "type": "DIRECTOR",
+                "is_shared": false
+            }
+        ],
+        "edges": [
+            {
+                "source": "Suresh Mishra",
+                "target": "Delta Enterprises Partnership Firm",
+                "relation": "DIRECTOR_OF"
+            },
+            {
+                "source": "Sunil Sinha",
+                "target": "Delta Enterprises Partnership Firm",
+                "relation": "DIRECTOR_OF"
+            }
+        ]
+    }
+}

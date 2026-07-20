@@ -42,21 +42,21 @@ class ComplianceAgent(AgentBase):
         def get_type(doc):
             return doc.get("type", doc.get("doc_type"))
 
-        # If exactly 1 document is uploaded, treat it as a combined master document
-        if len(documents) == 1:
-            master_doc = documents[0]
+        # Check if we have a combined document to expand
+        combined_doc = next((doc for doc in documents if get_type(doc) == "COMBINED"), None)
+        if combined_doc:
             self.logger.info(
-                "Only 1 document found. Expanding it to cover all 4 required types.",
+                "Combined document found. Expanding it to cover all 4 required types.",
                 extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
             )
             
             new_docs = []
             for req_type in REQUIRED_DOC_TYPES:
-                doc_copy = master_doc.copy()
+                doc_copy = combined_doc.copy()
                 doc_copy["type"] = req_type
                 doc_copy["doc_type"] = req_type
                 # Ensure it has a unique doc_id
-                doc_copy["doc_id"] = f"{req_type}_{master_doc.get('doc_id', 'doc')}"
+                doc_copy["doc_id"] = f"{req_type}_{combined_doc.get('doc_id', 'doc')}"
                 new_docs.append(doc_copy)
                 
             # Update the application's documents namespace with the 4 expanded files

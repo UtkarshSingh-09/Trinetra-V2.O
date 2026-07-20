@@ -5,8 +5,11 @@ Broadcasts agent status updates in real-time to connected frontends.
 """
 import json
 import asyncio
+import logging
 from fastapi import WebSocket
 from typing import Dict, List
+
+logger = logging.getLogger("trinetra-backend.websocket_manager")
 
 
 class WebSocketManager:
@@ -37,9 +40,9 @@ class WebSocketManager:
             if not self.active_connections[application_id]:
                 del self.active_connections[application_id]
 
-    async def broadcast(self, application_id: str, message: dict):
+    async def broadcast_local(self, application_id: str, message: dict):
         """
-        Send a message to all WebSocket clients watching this application.
+        Send a message to all WebSocket clients watching this application on this local server.
         Automatically removes dead connections.
         """
         if application_id not in self.active_connections:
@@ -49,12 +52,29 @@ class WebSocketManager:
         for ws in self.active_connections[application_id]:
             try:
                 await ws.send_json(message)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to send websocket message, marking client as dead: {e}")
                 dead_connections.append(ws)
 
         # Clean up dead connections
         for ws in dead_connections:
             self.disconnect(ws, application_id)
+
+    async def broadcast(self, application_id: str, message: dict):
+        """Broadcasts globally across all scaled servers via Redis Pub/Sub."""
+        from core import redis_broker
+        try:
+            if not redis_broker.client:
+                await redis_broker.connect()
+            payload = {
+                "application_id": application_id,
+                "payload": message
+            }
+            await redis_broker.client.publish("websocket_broadcast", json.dumps(payload))
+        except Exception as e:
+            logger.warning(f"Failed to publish global websocket broadcast via Redis: {e}. Falling back to local.")
+            # Fallback to local send
+            await self.broadcast_local(application_id, message)
 
     async def broadcast_all(self, message: dict):
         """Send a message to ALL connected WebSocket clients."""

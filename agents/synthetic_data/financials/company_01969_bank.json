@@ -1,0 +1,2275 @@
+{
+    "bank_name": "State Bank of India",
+    "account_number": "6839651364",
+    "ifsc": "STAT0909625",
+    "transactions": [
+        {
+            "date": "2025-04-01",
+            "type": "DEBIT",
+            "amount": 271856.26,
+            "narration": "CHQ CLG / 858651 / PAID TO Supreme Industries",
+            "balance": 600193.06
+        },
+        {
+            "date": "2025-04-02",
+            "type": "CREDIT",
+            "amount": 286908.46,
+            "narration": "RTGS CR / Ambika Trading Corp / CORE_BANK",
+            "balance": 887101.52
+        },
+        {
+            "date": "2025-04-03",
+            "type": "CREDIT",
+            "amount": 250064.53,
+            "narration": "IMPS CR / Supreme Industries / IMPS_REF_123627",
+            "balance": 1137166.05
+        },
+        {
+            "date": "2025-04-04",
+            "type": "CREDIT",
+            "amount": 285011.51,
+            "narration": "UPI CR / pay@saraswatienterprises / PAYMENT_RCVD",
+            "balance": 1422177.56
+        },
+        {
+            "date": "2025-04-05",
+            "type": "DEBIT",
+            "amount": -200276.91,
+            "narration": "NEFT DR / Karan Traders / NET_BANK",
+            "balance": 1622454.47
+        },
+        {
+            "date": "2025-04-06",
+            "type": "DEBIT",
+            "amount": 151726.59,
+            "narration": "NEFT DR / Tata Power / NET_BANK",
+            "balance": 1470727.88
+        },
+        {
+            "date": "2025-04-07",
+            "type": "CREDIT",
+            "amount": 156917.07,
+            "narration": "UPI CR / pay@relianceretail / PAYMENT_RCVD",
+            "balance": 1627644.95
+        },
+        {
+            "date": "2025-04-08",
+            "type": "CREDIT",
+            "amount": 224255.15,
+            "narration": "RTGS CR / Infosys Ltd / CORE_BANK",
+            "balance": 1851900.1
+        },
+        {
+            "date": "2025-04-09",
+            "type": "DEBIT",
+            "amount": 191120.59,
+            "narration": "UPI DR / pay@tatapower / PAYMENT_TO_VENDOR",
+            "balance": 1660779.51
+        },
+        {
+            "date": "2025-04-10",
+            "type": "DEBIT",
+            "amount": 269427.64,
+            "narration": "NEFT DR / Reliance Retail / NET_BANK",
+            "balance": 1391351.87
+        },
+        {
+            "date": "2025-04-11",
+            "type": "CREDIT",
+            "amount": 235426.52,
+            "narration": "NEFT CR / Karan Traders / NET_BANK",
+            "balance": 1626778.39
+        },
+        {
+            "date": "2025-04-12",
+            "type": "CREDIT",
+            "amount": 260633.83,
+            "narration": "RTGS CR / Infosys Ltd / CORE_BANK",
+            "balance": 1887412.22
+        },
+        {
+            "date": "2025-04-13",
+            "type": "CREDIT",
+            "amount": 302596.06,
+            "narration": "RTGS CR / Reliance Retail / CORE_BANK",
+            "balance": 2190008.28
+        },
+        {
+            "date": "2025-04-15",
+            "type": "DEBIT",
+            "amount": 190253.67,
+            "narration": "UPI DR / pay@supremeindustries / PAYMENT_TO_VENDOR",
+            "balance": 1999754.61
+        },
+        {
+            "date": "2025-04-16",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "UPI DR / pay@karantraders / PAYMENT_TO_VENDOR",
+            "balance": 1434243.25
+        },
+        {
+            "date": "2025-04-17",
+            "type": "DEBIT",
+            "amount": 142685.2,
+            "narration": "RTGS DR / Saraswati Enterprises / CORE_BANK",
+            "balance": 1291558.05
+        },
+        {
+            "date": "2025-04-18",
+            "type": "CREDIT",
+            "amount": 167484.2,
+            "narration": "CHQ DEP / 657092 / DEPOSIT FROM Supreme Industries",
+            "balance": 1459042.25
+        },
+        {
+            "date": "2025-04-19",
+            "type": "DEBIT",
+            "amount": 214165.0,
+            "narration": "IMPS DR / Supreme Industries / IMPS_REF_556006",
+            "balance": 1244877.25
+        },
+        {
+            "date": "2025-04-20",
+            "type": "CREDIT",
+            "amount": 417463.47,
+            "narration": "RTGS CR / Saraswati Enterprises / CORE_BANK",
+            "balance": 1662340.72
+        },
+        {
+            "date": "2025-04-21",
+            "type": "CREDIT",
+            "amount": 271495.08,
+            "narration": "CHQ DEP / 345930 / DEPOSIT FROM Saraswati Enterprises",
+            "balance": 1933835.8
+        },
+        {
+            "date": "2025-04-22",
+            "type": "DEBIT",
+            "amount": 166171.32,
+            "narration": "UPI DR / pay@infosysltd / PAYMENT_TO_VENDOR",
+            "balance": 1767664.48
+        },
+        {
+            "date": "2025-04-23",
+            "type": "DEBIT",
+            "amount": 197904.93,
+            "narration": "CHQ CLG / 956840 / PAID TO Ambika Trading Corp",
+            "balance": 1569759.55
+        },
+        {
+            "date": "2025-04-24",
+            "type": "DEBIT",
+            "amount": 135907.17,
+            "narration": "CHQ CLG / 981764 / PAID TO Infosys Ltd",
+            "balance": 1433852.38
+        },
+        {
+            "date": "2025-04-25",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 692010 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 1433502.38
+        },
+        {
+            "date": "2025-04-26",
+            "type": "DEBIT",
+            "amount": 181114.27,
+            "narration": "NEFT DR / Jindal Steel & Power / NET_BANK",
+            "balance": 1252388.11
+        },
+        {
+            "date": "2025-04-27",
+            "type": "DEBIT",
+            "amount": 246823.39,
+            "narration": "CHQ CLG / 983917 / PAID TO Balaji Logistics",
+            "balance": 1005564.72
+        },
+        {
+            "date": "2025-05-01",
+            "type": "DEBIT",
+            "amount": 125292.64,
+            "narration": "UPI DR / pay@kirloskarbrothers / PAYMENT_TO_VENDOR",
+            "balance": 880272.08
+        },
+        {
+            "date": "2025-05-01",
+            "type": "DEBIT",
+            "amount": 333655.53,
+            "narration": "CHQ CLG / 557754 / PAID TO Supreme Industries",
+            "balance": 546616.55
+        },
+        {
+            "date": "2025-05-02",
+            "type": "DEBIT",
+            "amount": 335120.81,
+            "narration": "IMPS DR / Supreme Industries / IMPS_REF_546519",
+            "balance": 211495.74
+        },
+        {
+            "date": "2025-05-03",
+            "type": "CREDIT",
+            "amount": 95058.95,
+            "narration": "OD_FACILITY / DRAW / STATE BANK OF INDIA_CREDIT_IN",
+            "balance": 17069.89
+        },
+        {
+            "date": "2025-05-03",
+            "type": "DEBIT",
+            "amount": 289484.8,
+            "narration": "IMPS DR / Godrej Properties / IMPS_REF_348361",
+            "balance": 17069.89
+        },
+        {
+            "date": "2025-05-04",
+            "type": "CREDIT",
+            "amount": 377077.21,
+            "narration": "RTGS CR / Saraswati Enterprises / CORE_BANK",
+            "balance": 394147.1
+        },
+        {
+            "date": "2025-05-05",
+            "type": "CREDIT",
+            "amount": 190600.21,
+            "narration": "OD_FACILITY / DRAW / STATE BANK OF INDIA_CREDIT_IN",
+            "balance": 19235.95
+        },
+        {
+            "date": "2025-05-05",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "RTGS DR / Godrej Properties / CORE_BANK",
+            "balance": 19235.95
+        },
+        {
+            "date": "2025-05-06",
+            "type": "CREDIT",
+            "amount": 133714.61,
+            "narration": "OD_FACILITY / DRAW / STATE BANK OF INDIA_CREDIT_IN",
+            "balance": 12665.17
+        },
+        {
+            "date": "2025-05-06",
+            "type": "DEBIT",
+            "amount": 140285.39,
+            "narration": "NEFT DR / Reliance Retail / NET_BANK",
+            "balance": 12665.17
+        },
+        {
+            "date": "2025-05-07",
+            "type": "CREDIT",
+            "amount": 216763.22,
+            "narration": "OD_FACILITY / DRAW / STATE BANK OF INDIA_CREDIT_IN",
+            "balance": 15134.11
+        },
+        {
+            "date": "2025-05-07",
+            "type": "DEBIT",
+            "amount": 214294.28,
+            "narration": "UPI DR / pay@kirloskarbrothers / PAYMENT_TO_VENDOR",
+            "balance": 15134.11
+        },
+        {
+            "date": "2025-05-08",
+            "type": "DEBIT",
+            "amount": -1038159.2,
+            "narration": "CHQ CLG / 756092 / PAID TO Reliance Retail",
+            "balance": 1053293.31
+        },
+        {
+            "date": "2025-05-09",
+            "type": "DEBIT",
+            "amount": 220279.73,
+            "narration": "IMPS DR / Kirloskar Brothers / IMPS_REF_872319",
+            "balance": 833013.58
+        },
+        {
+            "date": "2025-05-10",
+            "type": "DEBIT",
+            "amount": 264810.84,
+            "narration": "RTGS DR / Shree Cement / CORE_BANK",
+            "balance": 568202.74
+        },
+        {
+            "date": "2025-05-11",
+            "type": "DEBIT",
+            "amount": 242611.0,
+            "narration": "NEFT DR / Kirloskar Brothers / NET_BANK",
+            "balance": 325591.74
+        },
+        {
+            "date": "2025-05-12",
+            "type": "CREDIT",
+            "amount": 348970.57,
+            "narration": "RTGS CR / Supreme Industries / CORE_BANK",
+            "balance": 674562.31
+        },
+        {
+            "date": "2025-05-13",
+            "type": "DEBIT",
+            "amount": 338301.32,
+            "narration": "IMPS DR / Infosys Ltd / IMPS_REF_584273",
+            "balance": 336260.99
+        },
+        {
+            "date": "2025-05-14",
+            "type": "CREDIT",
+            "amount": 485215.25,
+            "narration": "NEFT CR / Godrej Properties / NET_BANK",
+            "balance": 821476.24
+        },
+        {
+            "date": "2025-05-15",
+            "type": "DEBIT",
+            "amount": 198505.91,
+            "narration": "RTGS DR / Reliance Retail / CORE_BANK",
+            "balance": 622970.33
+        },
+        {
+            "date": "2025-05-15",
+            "type": "DEBIT",
+            "amount": 191137.75,
+            "narration": "UPI DR / pay@karantraders / PAYMENT_TO_VENDOR",
+            "balance": 431832.58
+        },
+        {
+            "date": "2025-05-16",
+            "type": "DEBIT",
+            "amount": 266207.34,
+            "narration": "NEFT DR / Ambika Trading Corp / NET_BANK",
+            "balance": 165625.24
+        },
+        {
+            "date": "2025-05-17",
+            "type": "CREDIT",
+            "amount": 97304.06,
+            "narration": "OD_FACILITY / DRAW / STATE BANK OF INDIA_CREDIT_IN",
+            "balance": 7575.32
+        },
+        {
+            "date": "2025-05-17",
+            "type": "DEBIT",
+            "amount": 255353.98,
+            "narration": "NEFT DR / Infosys Ltd / NET_BANK",
+            "balance": 7575.32
+        },
+        {
+            "date": "2025-05-18",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 429650 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 7225.32
+        },
+        {
+            "date": "2025-05-19",
+            "type": "CREDIT",
+            "amount": 282081.26,
+            "narration": "OD_FACILITY / DRAW / STATE BANK OF INDIA_CREDIT_IN",
+            "balance": 9726.48
+        },
+        {
+            "date": "2025-05-19",
+            "type": "DEBIT",
+            "amount": 279580.1,
+            "narration": "UPI DR / pay@ambikatradingcorp / PAYMENT_TO_VENDOR",
+            "balance": 9726.48
+        },
+        {
+            "date": "2025-05-20",
+            "type": "CREDIT",
+            "amount": 245843.42,
+            "narration": "CHQ DEP / 563526 / DEPOSIT FROM Jindal Steel & Power",
+            "balance": 255569.9
+        },
+        {
+            "date": "2025-05-21",
+            "type": "CREDIT",
+            "amount": 484466.43,
+            "narration": "CHQ DEP / 598319 / DEPOSIT FROM Saraswati Enterprises",
+            "balance": 740036.33
+        },
+        {
+            "date": "2025-05-22",
+            "type": "CREDIT",
+            "amount": -152600.52,
+            "narration": "UPI CR / pay@balajilogistics / PAYMENT_RCVD",
+            "balance": 587435.81
+        },
+        {
+            "date": "2025-05-23",
+            "type": "CREDIT",
+            "amount": 343791.98,
+            "narration": "UPI CR / pay@supremeindustries / PAYMENT_RCVD",
+            "balance": 931227.79
+        },
+        {
+            "date": "2025-05-24",
+            "type": "CREDIT",
+            "amount": 233034.12,
+            "narration": "UPI CR / pay@kirloskarbrothers / PAYMENT_RCVD",
+            "balance": 1164261.91
+        },
+        {
+            "date": "2025-05-25",
+            "type": "CREDIT",
+            "amount": 392888.11,
+            "narration": "UPI CR / pay@godrejproperties / PAYMENT_RCVD",
+            "balance": 1557150.02
+        },
+        {
+            "date": "2025-05-26",
+            "type": "CREDIT",
+            "amount": 325308.43,
+            "narration": "IMPS CR / Godrej Properties / IMPS_REF_979563",
+            "balance": 1882458.45
+        },
+        {
+            "date": "2025-05-27",
+            "type": "CREDIT",
+            "amount": 475475.85,
+            "narration": "UPI CR / pay@shreecement / PAYMENT_RCVD",
+            "balance": 2357934.3
+        },
+        {
+            "date": "2025-05-28",
+            "type": "DEBIT",
+            "amount": 170490.73,
+            "narration": "NEFT DR / Tata Power / NET_BANK",
+            "balance": 2187443.57
+        },
+        {
+            "date": "2025-06-01",
+            "type": "DEBIT",
+            "amount": 127189.04,
+            "narration": "NEFT DR / Ambika Trading Corp / NET_BANK",
+            "balance": 2060254.53
+        },
+        {
+            "date": "2025-06-02",
+            "type": "CREDIT",
+            "amount": 321725.88,
+            "narration": "UPI CR / pay@relianceretail / PAYMENT_RCVD",
+            "balance": 2381980.41
+        },
+        {
+            "date": "2025-06-03",
+            "type": "DEBIT",
+            "amount": 179328.19,
+            "narration": "IMPS DR / Jindal Steel & Power / IMPS_REF_965618",
+            "balance": 2202652.22
+        },
+        {
+            "date": "2025-06-04",
+            "type": "CREDIT",
+            "amount": 811742.56,
+            "narration": "RTGS CR / Jindal Steel & Power / CORE_BANK",
+            "balance": 3014394.78
+        },
+        {
+            "date": "2025-06-05",
+            "type": "DEBIT",
+            "amount": 135311.19,
+            "narration": "NEFT DR / Reliance Retail / NET_BANK",
+            "balance": 2879083.59
+        },
+        {
+            "date": "2025-06-06",
+            "type": "CREDIT",
+            "amount": 361916.48,
+            "narration": "RTGS CR / Saraswati Enterprises / CORE_BANK",
+            "balance": 3241000.07
+        },
+        {
+            "date": "2025-06-07",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 148297 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 3240650.07
+        },
+        {
+            "date": "2025-06-08",
+            "type": "DEBIT",
+            "amount": 149782.17,
+            "narration": "CHQ CLG / 720415 / PAID TO Infosys Ltd",
+            "balance": 3090867.9
+        },
+        {
+            "date": "2025-06-09",
+            "type": "CREDIT",
+            "amount": 341163.33,
+            "narration": "IMPS CR / Jindal Steel & Power / IMPS_REF_541957",
+            "balance": 3432031.23
+        },
+        {
+            "date": "2025-06-11",
+            "type": "DEBIT",
+            "amount": 213060.26,
+            "narration": "CHQ CLG / 403541 / PAID TO Godrej Properties",
+            "balance": 3218970.97
+        },
+        {
+            "date": "2025-06-12",
+            "type": "DEBIT",
+            "amount": 224859.64,
+            "narration": "NEFT DR / Ambika Trading Corp / NET_BANK",
+            "balance": 2994111.33
+        },
+        {
+            "date": "2025-06-13",
+            "type": "CREDIT",
+            "amount": 241092.22,
+            "narration": "IMPS CR / Supreme Industries / IMPS_REF_729542",
+            "balance": 3235203.55
+        },
+        {
+            "date": "2025-06-14",
+            "type": "DEBIT",
+            "amount": 93409.0,
+            "narration": "CHQ CLG / 264360 / PAID TO Shree Cement",
+            "balance": 3141794.55
+        },
+        {
+            "date": "2025-06-15",
+            "type": "CREDIT",
+            "amount": 217752.84,
+            "narration": "NEFT CR / Ambika Trading Corp / NET_BANK",
+            "balance": 3359547.39
+        },
+        {
+            "date": "2025-06-16",
+            "type": "DEBIT",
+            "amount": 259727.65,
+            "narration": "NEFT DR / Tata Power / NET_BANK",
+            "balance": 3099819.74
+        },
+        {
+            "date": "2025-06-17",
+            "type": "DEBIT",
+            "amount": 182659.74,
+            "narration": "NEFT DR / Karan Traders / NET_BANK",
+            "balance": 2917160.0
+        },
+        {
+            "date": "2025-06-18",
+            "type": "DEBIT",
+            "amount": 203304.85,
+            "narration": "CHQ CLG / 132799 / PAID TO Tata Power",
+            "balance": 2713855.15
+        },
+        {
+            "date": "2025-06-20",
+            "type": "DEBIT",
+            "amount": 151214.7,
+            "narration": "UPI DR / pay@infosysltd / PAYMENT_TO_VENDOR",
+            "balance": 2562640.45
+        },
+        {
+            "date": "2025-06-21",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "RTGS DR / Balaji Logistics / CORE_BANK",
+            "balance": 1997129.09
+        },
+        {
+            "date": "2025-06-22",
+            "type": "DEBIT",
+            "amount": 262098.1,
+            "narration": "NEFT DR / Infosys Ltd / NET_BANK",
+            "balance": 1735030.99
+        },
+        {
+            "date": "2025-06-23",
+            "type": "DEBIT",
+            "amount": 91560.81,
+            "narration": "NEFT DR / Tata Power / NET_BANK",
+            "balance": 1643470.18
+        },
+        {
+            "date": "2025-06-24",
+            "type": "DEBIT",
+            "amount": 105699.36,
+            "narration": "CHQ CLG / 621168 / PAID TO Kirloskar Brothers",
+            "balance": 1537770.82
+        },
+        {
+            "date": "2025-06-25",
+            "type": "CREDIT",
+            "amount": 354182.44,
+            "narration": "RTGS CR / Shree Cement / CORE_BANK",
+            "balance": 1891953.26
+        },
+        {
+            "date": "2025-06-26",
+            "type": "CREDIT",
+            "amount": 242474.74,
+            "narration": "IMPS CR / Shree Cement / IMPS_REF_748500",
+            "balance": 2134428.0
+        },
+        {
+            "date": "2025-06-27",
+            "type": "CREDIT",
+            "amount": 197356.86,
+            "narration": "UPI CR / pay@saraswatienterprises / PAYMENT_RCVD",
+            "balance": 2331784.86
+        },
+        {
+            "date": "2025-07-01",
+            "type": "DEBIT",
+            "amount": 266759.13,
+            "narration": "CHQ CLG / 640340 / PAID TO Kirloskar Brothers",
+            "balance": 2065025.73
+        },
+        {
+            "date": "2025-07-02",
+            "type": "DEBIT",
+            "amount": 238205.33,
+            "narration": "UPI DR / pay@balajilogistics / PAYMENT_TO_VENDOR",
+            "balance": 1826820.4
+        },
+        {
+            "date": "2025-07-03",
+            "type": "CREDIT",
+            "amount": 212536.08,
+            "narration": "UPI CR / pay@karantraders / PAYMENT_RCVD",
+            "balance": 2039356.48
+        },
+        {
+            "date": "2025-07-04",
+            "type": "DEBIT",
+            "amount": 250674.61,
+            "narration": "NEFT DR / Infosys Ltd / NET_BANK",
+            "balance": 1788681.87
+        },
+        {
+            "date": "2025-07-05",
+            "type": "CREDIT",
+            "amount": 230869.76,
+            "narration": "IMPS CR / Reliance Retail / IMPS_REF_746313",
+            "balance": 2019551.63
+        },
+        {
+            "date": "2025-07-06",
+            "type": "DEBIT",
+            "amount": 231854.36,
+            "narration": "RTGS DR / Shree Cement / CORE_BANK",
+            "balance": 1787697.27
+        },
+        {
+            "date": "2025-07-07",
+            "type": "DEBIT",
+            "amount": 114261.18,
+            "narration": "IMPS DR / Godrej Properties / IMPS_REF_847939",
+            "balance": 1673436.09
+        },
+        {
+            "date": "2025-07-08",
+            "type": "DEBIT",
+            "amount": 260526.68,
+            "narration": "RTGS DR / Reliance Retail / CORE_BANK",
+            "balance": 1412909.41
+        },
+        {
+            "date": "2025-07-09",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 428202 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 1412559.41
+        },
+        {
+            "date": "2025-07-10",
+            "type": "DEBIT",
+            "amount": 142004.65,
+            "narration": "RTGS DR / Tata Power / CORE_BANK",
+            "balance": 1270554.76
+        },
+        {
+            "date": "2025-07-11",
+            "type": "DEBIT",
+            "amount": -1003490.46,
+            "narration": "NEFT DR / Kirloskar Brothers / NET_BANK",
+            "balance": 2274045.22
+        },
+        {
+            "date": "2025-07-12",
+            "type": "DEBIT",
+            "amount": 219909.69,
+            "narration": "CHQ CLG / 359027 / PAID TO Saraswati Enterprises",
+            "balance": 2054135.53
+        },
+        {
+            "date": "2025-07-13",
+            "type": "CREDIT",
+            "amount": 214755.15,
+            "narration": "RTGS CR / Saraswati Enterprises / CORE_BANK",
+            "balance": 2268890.68
+        },
+        {
+            "date": "2025-07-14",
+            "type": "DEBIT",
+            "amount": 185625.33,
+            "narration": "CHQ CLG / 880777 / PAID TO Tata Power",
+            "balance": 2083265.35
+        },
+        {
+            "date": "2025-07-15",
+            "type": "CREDIT",
+            "amount": 738404.24,
+            "narration": "IMPS CR / Reliance Retail / IMPS_REF_853542",
+            "balance": 2821669.59
+        },
+        {
+            "date": "2025-07-16",
+            "type": "CREDIT",
+            "amount": 239197.79,
+            "narration": "IMPS CR / Jindal Steel & Power / IMPS_REF_715106",
+            "balance": 3060867.38
+        },
+        {
+            "date": "2025-07-17",
+            "type": "DEBIT",
+            "amount": 173198.1,
+            "narration": "CHQ CLG / 803580 / PAID TO Tata Power",
+            "balance": 2887669.28
+        },
+        {
+            "date": "2025-07-18",
+            "type": "DEBIT",
+            "amount": 190569.11,
+            "narration": "RTGS DR / Saraswati Enterprises / CORE_BANK",
+            "balance": 2697100.17
+        },
+        {
+            "date": "2025-07-19",
+            "type": "CREDIT",
+            "amount": 334461.68,
+            "narration": "NEFT CR / Supreme Industries / NET_BANK",
+            "balance": 3031561.85
+        },
+        {
+            "date": "2025-07-20",
+            "type": "DEBIT",
+            "amount": 189285.63,
+            "narration": "NEFT DR / Ambika Trading Corp / NET_BANK",
+            "balance": 2842276.22
+        },
+        {
+            "date": "2025-07-21",
+            "type": "DEBIT",
+            "amount": 141641.08,
+            "narration": "IMPS DR / Balaji Logistics / IMPS_REF_740007",
+            "balance": 2700635.14
+        },
+        {
+            "date": "2025-07-22",
+            "type": "CREDIT",
+            "amount": 360490.2,
+            "narration": "UPI CR / pay@shreecement / PAYMENT_RCVD",
+            "balance": 3061125.34
+        },
+        {
+            "date": "2025-07-23",
+            "type": "CREDIT",
+            "amount": 153477.32,
+            "narration": "IMPS CR / Jindal Steel & Power / IMPS_REF_870650",
+            "balance": 3214602.66
+        },
+        {
+            "date": "2025-07-24",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "IMPS DR / Saraswati Enterprises / IMPS_REF_280692",
+            "balance": 2649091.3
+        },
+        {
+            "date": "2025-07-25",
+            "type": "DEBIT",
+            "amount": 213555.93,
+            "narration": "NEFT DR / Kirloskar Brothers / NET_BANK",
+            "balance": 2435535.37
+        },
+        {
+            "date": "2025-07-26",
+            "type": "DEBIT",
+            "amount": 181826.91,
+            "narration": "RTGS DR / Balaji Logistics / CORE_BANK",
+            "balance": 2253708.46
+        },
+        {
+            "date": "2025-07-27",
+            "type": "CREDIT",
+            "amount": 367611.31,
+            "narration": "RTGS CR / Shree Cement / CORE_BANK",
+            "balance": 2621319.77
+        },
+        {
+            "date": "2025-07-28",
+            "type": "DEBIT",
+            "amount": 156321.73,
+            "narration": "NEFT DR / Godrej Properties / NET_BANK",
+            "balance": 2464998.04
+        },
+        {
+            "date": "2025-08-01",
+            "type": "CREDIT",
+            "amount": 290432.2,
+            "narration": "UPI CR / pay@jindalsteel&power / PAYMENT_RCVD",
+            "balance": 2755430.24
+        },
+        {
+            "date": "2025-08-02",
+            "type": "CREDIT",
+            "amount": 236690.77,
+            "narration": "UPI CR / pay@karantraders / PAYMENT_RCVD",
+            "balance": 2992121.01
+        },
+        {
+            "date": "2025-08-03",
+            "type": "DEBIT",
+            "amount": 313556.91,
+            "narration": "CHQ CLG / 802132 / PAID TO Infosys Ltd",
+            "balance": 2678564.1
+        },
+        {
+            "date": "2025-08-04",
+            "type": "DEBIT",
+            "amount": 304042.04,
+            "narration": "CHQ CLG / 646835 / PAID TO Supreme Industries",
+            "balance": 2374522.06
+        },
+        {
+            "date": "2025-08-05",
+            "type": "DEBIT",
+            "amount": 418686.18,
+            "narration": "CHQ CLG / 710999 / PAID TO Kirloskar Brothers",
+            "balance": 1955835.88
+        },
+        {
+            "date": "2025-08-06",
+            "type": "CREDIT",
+            "amount": 404616.37,
+            "narration": "CHQ DEP / 597811 / DEPOSIT FROM Godrej Properties",
+            "balance": 2360452.25
+        },
+        {
+            "date": "2025-08-07",
+            "type": "DEBIT",
+            "amount": 307295.33,
+            "narration": "RTGS DR / Shree Cement / CORE_BANK",
+            "balance": 2053156.92
+        },
+        {
+            "date": "2025-08-08",
+            "type": "CREDIT",
+            "amount": 467917.77,
+            "narration": "NEFT CR / Infosys Ltd / NET_BANK",
+            "balance": 2521074.69
+        },
+        {
+            "date": "2025-08-09",
+            "type": "CREDIT",
+            "amount": 465465.72,
+            "narration": "IMPS CR / Tata Power / IMPS_REF_265980",
+            "balance": 2986540.41
+        },
+        {
+            "date": "2025-08-11",
+            "type": "CREDIT",
+            "amount": 370453.26,
+            "narration": "NEFT CR / Shree Cement / NET_BANK",
+            "balance": 3356993.67
+        },
+        {
+            "date": "2025-08-12",
+            "type": "DEBIT",
+            "amount": 111574.4,
+            "narration": "IMPS DR / Shree Cement / IMPS_REF_430878",
+            "balance": 3245419.27
+        },
+        {
+            "date": "2025-08-13",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "IMPS DR / Tata Power / IMPS_REF_233895",
+            "balance": 2679907.91
+        },
+        {
+            "date": "2025-08-14",
+            "type": "CREDIT",
+            "amount": 433494.04,
+            "narration": "CHQ DEP / 843977 / DEPOSIT FROM Kirloskar Brothers",
+            "balance": 3113401.95
+        },
+        {
+            "date": "2025-08-15",
+            "type": "DEBIT",
+            "amount": 155841.16,
+            "narration": "RTGS DR / Saraswati Enterprises / CORE_BANK",
+            "balance": 2957560.79
+        },
+        {
+            "date": "2025-08-16",
+            "type": "CREDIT",
+            "amount": 249246.33,
+            "narration": "CHQ DEP / 679360 / DEPOSIT FROM Infosys Ltd",
+            "balance": 3206807.12
+        },
+        {
+            "date": "2025-08-17",
+            "type": "DEBIT",
+            "amount": 270639.84,
+            "narration": "UPI DR / pay@ambikatradingcorp / PAYMENT_TO_VENDOR",
+            "balance": 2936167.28
+        },
+        {
+            "date": "2025-08-18",
+            "type": "CREDIT",
+            "amount": 480804.69,
+            "narration": "IMPS CR / Balaji Logistics / IMPS_REF_125862",
+            "balance": 3416971.97
+        },
+        {
+            "date": "2025-08-20",
+            "type": "DEBIT",
+            "amount": 95738.77,
+            "narration": "CHQ CLG / 808150 / PAID TO Jindal Steel & Power",
+            "balance": 3321233.2
+        },
+        {
+            "date": "2025-08-21",
+            "type": "CREDIT",
+            "amount": 448736.11,
+            "narration": "RTGS CR / Karan Traders / CORE_BANK",
+            "balance": 3769969.31
+        },
+        {
+            "date": "2025-08-22",
+            "type": "DEBIT",
+            "amount": 141072.14,
+            "narration": "UPI DR / pay@godrejproperties / PAYMENT_TO_VENDOR",
+            "balance": 3628897.17
+        },
+        {
+            "date": "2025-08-23",
+            "type": "CREDIT",
+            "amount": -1004362.15,
+            "narration": "UPI CR / pay@saraswatienterprises / PAYMENT_RCVD",
+            "balance": 2624535.02
+        },
+        {
+            "date": "2025-08-24",
+            "type": "DEBIT",
+            "amount": 291126.53,
+            "narration": "IMPS DR / Balaji Logistics / IMPS_REF_773823",
+            "balance": 2333408.49
+        },
+        {
+            "date": "2025-08-25",
+            "type": "CREDIT",
+            "amount": 480926.31,
+            "narration": "UPI CR / pay@karantraders / PAYMENT_RCVD",
+            "balance": 2814334.8
+        },
+        {
+            "date": "2025-08-26",
+            "type": "DEBIT",
+            "amount": 193638.71,
+            "narration": "CHQ CLG / 978761 / PAID TO Infosys Ltd",
+            "balance": 2620696.09
+        },
+        {
+            "date": "2025-08-27",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 225835 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 2620346.09
+        },
+        {
+            "date": "2025-09-01",
+            "type": "DEBIT",
+            "amount": 227221.67,
+            "narration": "NEFT DR / Tata Power / NET_BANK",
+            "balance": 2393124.42
+        },
+        {
+            "date": "2025-09-02",
+            "type": "CREDIT",
+            "amount": 232865.4,
+            "narration": "CHQ DEP / 894432 / DEPOSIT FROM Reliance Retail",
+            "balance": 2625989.82
+        },
+        {
+            "date": "2025-09-03",
+            "type": "CREDIT",
+            "amount": 307933.32,
+            "narration": "IMPS CR / Jindal Steel & Power / IMPS_REF_335353",
+            "balance": 2933923.14
+        },
+        {
+            "date": "2025-09-04",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "UPI DR / pay@ambikatradingcorp / PAYMENT_TO_VENDOR",
+            "balance": 2368411.78
+        },
+        {
+            "date": "2025-09-05",
+            "type": "CREDIT",
+            "amount": 409475.78,
+            "narration": "RTGS CR / Balaji Logistics / CORE_BANK",
+            "balance": 2777887.56
+        },
+        {
+            "date": "2025-09-06",
+            "type": "DEBIT",
+            "amount": 117400.62,
+            "narration": "UPI DR / pay@balajilogistics / PAYMENT_TO_VENDOR",
+            "balance": 2660486.94
+        },
+        {
+            "date": "2025-09-08",
+            "type": "DEBIT",
+            "amount": 260314.18,
+            "narration": "IMPS DR / Saraswati Enterprises / IMPS_REF_583108",
+            "balance": 2400172.76
+        },
+        {
+            "date": "2025-09-09",
+            "type": "DEBIT",
+            "amount": 194351.12,
+            "narration": "NEFT DR / Godrej Properties / NET_BANK",
+            "balance": 2205821.64
+        },
+        {
+            "date": "2025-09-10",
+            "type": "CREDIT",
+            "amount": -203841.49,
+            "narration": "RTGS CR / Saraswati Enterprises / CORE_BANK",
+            "balance": 2001980.15
+        },
+        {
+            "date": "2025-09-11",
+            "type": "DEBIT",
+            "amount": 188641.88,
+            "narration": "NEFT DR / Jindal Steel & Power / NET_BANK",
+            "balance": 1813338.27
+        },
+        {
+            "date": "2025-09-12",
+            "type": "CREDIT",
+            "amount": 249801.42,
+            "narration": "CHQ DEP / 932168 / DEPOSIT FROM Reliance Retail",
+            "balance": 2063139.69
+        },
+        {
+            "date": "2025-09-13",
+            "type": "DEBIT",
+            "amount": 90962.89,
+            "narration": "IMPS DR / Saraswati Enterprises / IMPS_REF_144995",
+            "balance": 1972176.8
+        },
+        {
+            "date": "2025-09-15",
+            "type": "CREDIT",
+            "amount": 339428.53,
+            "narration": "UPI CR / pay@supremeindustries / PAYMENT_RCVD",
+            "balance": 2311605.33
+        },
+        {
+            "date": "2025-09-16",
+            "type": "CREDIT",
+            "amount": 370864.73,
+            "narration": "RTGS CR / Karan Traders / CORE_BANK",
+            "balance": 2682470.06
+        },
+        {
+            "date": "2025-09-17",
+            "type": "CREDIT",
+            "amount": 281908.13,
+            "narration": "IMPS CR / Tata Power / IMPS_REF_604766",
+            "balance": 2964378.19
+        },
+        {
+            "date": "2025-09-18",
+            "type": "CREDIT",
+            "amount": 407350.49,
+            "narration": "NEFT CR / Karan Traders / NET_BANK",
+            "balance": 3371728.68
+        },
+        {
+            "date": "2025-09-19",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 943148 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 3371378.68
+        },
+        {
+            "date": "2025-09-20",
+            "type": "DEBIT",
+            "amount": 542548.54,
+            "narration": "UPI DR / pay@ambikatradingcorp / PAYMENT_TO_VENDOR",
+            "balance": 2828830.14
+        },
+        {
+            "date": "2025-09-22",
+            "type": "DEBIT",
+            "amount": 179762.74,
+            "narration": "RTGS DR / Infosys Ltd / CORE_BANK",
+            "balance": 2649067.4
+        },
+        {
+            "date": "2025-09-23",
+            "type": "DEBIT",
+            "amount": 112616.5,
+            "narration": "RTGS DR / Ambika Trading Corp / CORE_BANK",
+            "balance": 2536450.9
+        },
+        {
+            "date": "2025-09-24",
+            "type": "DEBIT",
+            "amount": 198882.44,
+            "narration": "NEFT DR / Infosys Ltd / NET_BANK",
+            "balance": 2337568.46
+        },
+        {
+            "date": "2025-09-25",
+            "type": "DEBIT",
+            "amount": 279615.3,
+            "narration": "UPI DR / pay@jindalsteel&power / PAYMENT_TO_VENDOR",
+            "balance": 2057953.16
+        },
+        {
+            "date": "2025-09-26",
+            "type": "CREDIT",
+            "amount": 377398.61,
+            "narration": "UPI CR / pay@ambikatradingcorp / PAYMENT_RCVD",
+            "balance": 2435351.77
+        },
+        {
+            "date": "2025-09-27",
+            "type": "CREDIT",
+            "amount": 329979.94,
+            "narration": "IMPS CR / Ambika Trading Corp / IMPS_REF_580617",
+            "balance": 2765331.71
+        },
+        {
+            "date": "2025-10-01",
+            "type": "DEBIT",
+            "amount": 173912.67,
+            "narration": "NEFT DR / Jindal Steel & Power / NET_BANK",
+            "balance": 2591419.04
+        },
+        {
+            "date": "2025-10-01",
+            "type": "DEBIT",
+            "amount": 127226.14,
+            "narration": "CHQ CLG / 244887 / PAID TO Jindal Steel & Power",
+            "balance": 2464192.9
+        },
+        {
+            "date": "2025-10-02",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "RTGS DR / Supreme Industries / CORE_BANK",
+            "balance": 1898681.54
+        },
+        {
+            "date": "2025-10-03",
+            "type": "DEBIT",
+            "amount": 208435.83,
+            "narration": "CHQ CLG / 226132 / PAID TO Infosys Ltd",
+            "balance": 1690245.71
+        },
+        {
+            "date": "2025-10-04",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 549233 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 1689895.71
+        },
+        {
+            "date": "2025-10-05",
+            "type": "CREDIT",
+            "amount": 338111.88,
+            "narration": "NEFT CR / Infosys Ltd / NET_BANK",
+            "balance": 2028007.59
+        },
+        {
+            "date": "2025-10-06",
+            "type": "DEBIT",
+            "amount": 166919.23,
+            "narration": "CHQ CLG / 271232 / PAID TO Jindal Steel & Power",
+            "balance": 1861088.36
+        },
+        {
+            "date": "2025-10-07",
+            "type": "DEBIT",
+            "amount": 134695.53,
+            "narration": "CHQ CLG / 937178 / PAID TO Tata Power",
+            "balance": 1726392.83
+        },
+        {
+            "date": "2025-10-08",
+            "type": "CREDIT",
+            "amount": 477902.6,
+            "narration": "IMPS CR / Supreme Industries / IMPS_REF_792594",
+            "balance": 2204295.43
+        },
+        {
+            "date": "2025-10-09",
+            "type": "DEBIT",
+            "amount": 115854.32,
+            "narration": "UPI DR / pay@tatapower / PAYMENT_TO_VENDOR",
+            "balance": 2088441.11
+        },
+        {
+            "date": "2025-10-10",
+            "type": "CREDIT",
+            "amount": -40867.89,
+            "narration": "NEFT CR / Karan Traders / NET_BANK",
+            "balance": 2047573.22
+        },
+        {
+            "date": "2025-10-11",
+            "type": "DEBIT",
+            "amount": 117794.53,
+            "narration": "CHQ CLG / 532604 / PAID TO Balaji Logistics",
+            "balance": 1929778.69
+        },
+        {
+            "date": "2025-10-12",
+            "type": "DEBIT",
+            "amount": -146955.01,
+            "narration": "RTGS DR / Infosys Ltd / CORE_BANK",
+            "balance": 2076733.7
+        },
+        {
+            "date": "2025-10-13",
+            "type": "DEBIT",
+            "amount": 240041.1,
+            "narration": "UPI DR / pay@kirloskarbrothers / PAYMENT_TO_VENDOR",
+            "balance": 1836692.6
+        },
+        {
+            "date": "2025-10-14",
+            "type": "CREDIT",
+            "amount": 175590.79,
+            "narration": "UPI CR / pay@infosysltd / PAYMENT_RCVD",
+            "balance": 2012283.39
+        },
+        {
+            "date": "2025-10-15",
+            "type": "CREDIT",
+            "amount": 407479.53,
+            "narration": "UPI CR / pay@saraswatienterprises / PAYMENT_RCVD",
+            "balance": 2419762.92
+        },
+        {
+            "date": "2025-10-15",
+            "type": "DEBIT",
+            "amount": 139739.91,
+            "narration": "UPI DR / pay@kirloskarbrothers / PAYMENT_TO_VENDOR",
+            "balance": 2280023.01
+        },
+        {
+            "date": "2025-10-16",
+            "type": "CREDIT",
+            "amount": 369451.37,
+            "narration": "NEFT CR / Ambika Trading Corp / NET_BANK",
+            "balance": 2649474.38
+        },
+        {
+            "date": "2025-10-17",
+            "type": "DEBIT",
+            "amount": 100404.16,
+            "narration": "RTGS DR / Supreme Industries / CORE_BANK",
+            "balance": 2549070.22
+        },
+        {
+            "date": "2025-10-18",
+            "type": "DEBIT",
+            "amount": 243985.23,
+            "narration": "UPI DR / pay@relianceretail / PAYMENT_TO_VENDOR",
+            "balance": 2305084.99
+        },
+        {
+            "date": "2025-10-19",
+            "type": "CREDIT",
+            "amount": 285507.23,
+            "narration": "UPI CR / pay@kirloskarbrothers / PAYMENT_RCVD",
+            "balance": 2590592.22
+        },
+        {
+            "date": "2025-10-20",
+            "type": "DEBIT",
+            "amount": 174629.94,
+            "narration": "CHQ CLG / 664629 / PAID TO Balaji Logistics",
+            "balance": 2415962.28
+        },
+        {
+            "date": "2025-10-21",
+            "type": "CREDIT",
+            "amount": 378339.87,
+            "narration": "UPI CR / pay@godrejproperties / PAYMENT_RCVD",
+            "balance": 2794302.15
+        },
+        {
+            "date": "2025-10-22",
+            "type": "DEBIT",
+            "amount": 281637.25,
+            "narration": "NEFT DR / Reliance Retail / NET_BANK",
+            "balance": 2512664.9
+        },
+        {
+            "date": "2025-10-23",
+            "type": "DEBIT",
+            "amount": 184093.51,
+            "narration": "IMPS DR / Supreme Industries / IMPS_REF_693272",
+            "balance": 2328571.39
+        },
+        {
+            "date": "2025-10-24",
+            "type": "CREDIT",
+            "amount": 362224.44,
+            "narration": "UPI CR / pay@relianceretail / PAYMENT_RCVD",
+            "balance": 2690795.83
+        },
+        {
+            "date": "2025-10-25",
+            "type": "DEBIT",
+            "amount": 98322.44,
+            "narration": "NEFT DR / Shree Cement / NET_BANK",
+            "balance": 2592473.39
+        },
+        {
+            "date": "2025-10-26",
+            "type": "DEBIT",
+            "amount": 164935.49,
+            "narration": "UPI DR / pay@infosysltd / PAYMENT_TO_VENDOR",
+            "balance": 2427537.9
+        },
+        {
+            "date": "2025-10-27",
+            "type": "CREDIT",
+            "amount": 281969.38,
+            "narration": "NEFT CR / Kirloskar Brothers / NET_BANK",
+            "balance": 2709507.28
+        },
+        {
+            "date": "2025-10-28",
+            "type": "CREDIT",
+            "amount": 207362.54,
+            "narration": "RTGS CR / Karan Traders / CORE_BANK",
+            "balance": 2916869.82
+        },
+        {
+            "date": "2025-11-01",
+            "type": "DEBIT",
+            "amount": 160757.26,
+            "narration": "NEFT DR / Jindal Steel & Power / NET_BANK",
+            "balance": 2756112.56
+        },
+        {
+            "date": "2025-11-02",
+            "type": "DEBIT",
+            "amount": 200861.01,
+            "narration": "RTGS DR / Supreme Industries / CORE_BANK",
+            "balance": 2555251.55
+        },
+        {
+            "date": "2025-11-03",
+            "type": "CREDIT",
+            "amount": 359216.14,
+            "narration": "IMPS CR / Saraswati Enterprises / IMPS_REF_261083",
+            "balance": 2914467.69
+        },
+        {
+            "date": "2025-11-04",
+            "type": "DEBIT",
+            "amount": 314461.3,
+            "narration": "UPI DR / pay@balajilogistics / PAYMENT_TO_VENDOR",
+            "balance": 2600006.39
+        },
+        {
+            "date": "2025-11-05",
+            "type": "DEBIT",
+            "amount": 150400.72,
+            "narration": "NEFT DR / Kirloskar Brothers / NET_BANK",
+            "balance": 2449605.67
+        },
+        {
+            "date": "2025-11-06",
+            "type": "CREDIT",
+            "amount": 269758.32,
+            "narration": "RTGS CR / Saraswati Enterprises / CORE_BANK",
+            "balance": 2719363.99
+        },
+        {
+            "date": "2025-11-07",
+            "type": "CREDIT",
+            "amount": 256210.61,
+            "narration": "RTGS CR / Ambika Trading Corp / CORE_BANK",
+            "balance": 2975574.6
+        },
+        {
+            "date": "2025-11-08",
+            "type": "CREDIT",
+            "amount": 254207.36,
+            "narration": "UPI CR / pay@karantraders / PAYMENT_RCVD",
+            "balance": 3229781.96
+        },
+        {
+            "date": "2025-11-09",
+            "type": "DEBIT",
+            "amount": 281905.39,
+            "narration": "IMPS DR / Ambika Trading Corp / IMPS_REF_726803",
+            "balance": 2947876.57
+        },
+        {
+            "date": "2025-11-11",
+            "type": "CREDIT",
+            "amount": 381918.02,
+            "narration": "RTGS CR / Karan Traders / CORE_BANK",
+            "balance": 3329794.59
+        },
+        {
+            "date": "2025-11-12",
+            "type": "CREDIT",
+            "amount": 366266.65,
+            "narration": "UPI CR / pay@shreecement / PAYMENT_RCVD",
+            "balance": 3696061.24
+        },
+        {
+            "date": "2025-11-13",
+            "type": "DEBIT",
+            "amount": 245423.56,
+            "narration": "IMPS DR / Kirloskar Brothers / IMPS_REF_268025",
+            "balance": 3450637.68
+        },
+        {
+            "date": "2025-11-14",
+            "type": "DEBIT",
+            "amount": 329167.07,
+            "narration": "IMPS DR / Karan Traders / IMPS_REF_680764",
+            "balance": 3121470.61
+        },
+        {
+            "date": "2025-11-15",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "CHQ CLG / 881254 / PAID TO Tata Power",
+            "balance": 2555959.25
+        },
+        {
+            "date": "2025-11-16",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 676456 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 2555609.25
+        },
+        {
+            "date": "2025-11-17",
+            "type": "DEBIT",
+            "amount": 305114.69,
+            "narration": "NEFT DR / Reliance Retail / NET_BANK",
+            "balance": 2250494.56
+        },
+        {
+            "date": "2025-11-18",
+            "type": "CREDIT",
+            "amount": 936552.62,
+            "narration": "RTGS CR / Saraswati Enterprises / CORE_BANK",
+            "balance": 3187047.18
+        },
+        {
+            "date": "2025-11-20",
+            "type": "CREDIT",
+            "amount": 371406.27,
+            "narration": "NEFT CR / Ambika Trading Corp / NET_BANK",
+            "balance": 3558453.45
+        },
+        {
+            "date": "2025-11-21",
+            "type": "DEBIT",
+            "amount": 294370.91,
+            "narration": "UPI DR / pay@karantraders / PAYMENT_TO_VENDOR",
+            "balance": 3264082.54
+        },
+        {
+            "date": "2025-11-22",
+            "type": "DEBIT",
+            "amount": 124205.51,
+            "narration": "UPI DR / pay@kirloskarbrothers / PAYMENT_TO_VENDOR",
+            "balance": 3139877.03
+        },
+        {
+            "date": "2025-11-23",
+            "type": "CREDIT",
+            "amount": 221953.5,
+            "narration": "CHQ DEP / 864945 / DEPOSIT FROM Reliance Retail",
+            "balance": 3361830.53
+        },
+        {
+            "date": "2025-11-24",
+            "type": "CREDIT",
+            "amount": 249330.93,
+            "narration": "IMPS CR / Infosys Ltd / IMPS_REF_586435",
+            "balance": 3611161.46
+        },
+        {
+            "date": "2025-11-25",
+            "type": "DEBIT",
+            "amount": 163415.32,
+            "narration": "UPI DR / pay@infosysltd / PAYMENT_TO_VENDOR",
+            "balance": 3447746.14
+        },
+        {
+            "date": "2025-11-26",
+            "type": "DEBIT",
+            "amount": 117701.7,
+            "narration": "NEFT DR / Jindal Steel & Power / NET_BANK",
+            "balance": 3330044.44
+        },
+        {
+            "date": "2025-11-27",
+            "type": "DEBIT",
+            "amount": 241790.4,
+            "narration": "CHQ CLG / 418967 / PAID TO Ambika Trading Corp",
+            "balance": 3088254.04
+        },
+        {
+            "date": "2025-12-01",
+            "type": "DEBIT",
+            "amount": 208055.25,
+            "narration": "IMPS DR / Supreme Industries / IMPS_REF_146282",
+            "balance": 2880198.79
+        },
+        {
+            "date": "2025-12-02",
+            "type": "DEBIT",
+            "amount": 141822.07,
+            "narration": "RTGS DR / Reliance Retail / CORE_BANK",
+            "balance": 2738376.72
+        },
+        {
+            "date": "2025-12-03",
+            "type": "DEBIT",
+            "amount": 139107.54,
+            "narration": "IMPS DR / Godrej Properties / IMPS_REF_493142",
+            "balance": 2599269.18
+        },
+        {
+            "date": "2025-12-04",
+            "type": "CREDIT",
+            "amount": 191110.55,
+            "narration": "NEFT CR / Karan Traders / NET_BANK",
+            "balance": 2790379.73
+        },
+        {
+            "date": "2025-12-05",
+            "type": "DEBIT",
+            "amount": 218991.96,
+            "narration": "RTGS DR / Infosys Ltd / CORE_BANK",
+            "balance": 2571387.77
+        },
+        {
+            "date": "2025-12-06",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "NEFT DR / Balaji Logistics / NET_BANK",
+            "balance": 2005876.41
+        },
+        {
+            "date": "2025-12-07",
+            "type": "DEBIT",
+            "amount": 295626.83,
+            "narration": "RTGS DR / Saraswati Enterprises / CORE_BANK",
+            "balance": 1710249.58
+        },
+        {
+            "date": "2025-12-08",
+            "type": "DEBIT",
+            "amount": 227425.78,
+            "narration": "CHQ CLG / 108162 / PAID TO Karan Traders",
+            "balance": 1482823.8
+        },
+        {
+            "date": "2025-12-09",
+            "type": "CREDIT",
+            "amount": -580895.31,
+            "narration": "UPI CR / pay@ambikatradingcorp / PAYMENT_RCVD",
+            "balance": 901928.49
+        },
+        {
+            "date": "2025-12-11",
+            "type": "CREDIT",
+            "amount": 485823.13,
+            "narration": "UPI CR / pay@supremeindustries / PAYMENT_RCVD",
+            "balance": 1387751.62
+        },
+        {
+            "date": "2025-12-12",
+            "type": "DEBIT",
+            "amount": 145993.56,
+            "narration": "CHQ CLG / 407432 / PAID TO Kirloskar Brothers",
+            "balance": 1241758.06
+        },
+        {
+            "date": "2025-12-13",
+            "type": "CREDIT",
+            "amount": 337723.31,
+            "narration": "CHQ DEP / 776863 / DEPOSIT FROM Kirloskar Brothers",
+            "balance": 1579481.37
+        },
+        {
+            "date": "2025-12-14",
+            "type": "CREDIT",
+            "amount": 252299.91,
+            "narration": "NEFT CR / Kirloskar Brothers / NET_BANK",
+            "balance": 1831781.28
+        },
+        {
+            "date": "2025-12-15",
+            "type": "CREDIT",
+            "amount": 443094.69,
+            "narration": "UPI CR / pay@relianceretail / PAYMENT_RCVD",
+            "balance": 2274875.97
+        },
+        {
+            "date": "2025-12-16",
+            "type": "CREDIT",
+            "amount": 258864.96,
+            "narration": "UPI CR / pay@jindalsteel&power / PAYMENT_RCVD",
+            "balance": 2533740.93
+        },
+        {
+            "date": "2025-12-17",
+            "type": "CREDIT",
+            "amount": 304238.05,
+            "narration": "IMPS CR / Kirloskar Brothers / IMPS_REF_686279",
+            "balance": 2837978.98
+        },
+        {
+            "date": "2025-12-18",
+            "type": "CREDIT",
+            "amount": 350156.78,
+            "narration": "UPI CR / pay@tatapower / PAYMENT_RCVD",
+            "balance": 3188135.76
+        },
+        {
+            "date": "2025-12-20",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 542311 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 3187785.76
+        },
+        {
+            "date": "2025-12-21",
+            "type": "CREDIT",
+            "amount": 334400.54,
+            "narration": "RTGS CR / Ambika Trading Corp / CORE_BANK",
+            "balance": 3522186.3
+        },
+        {
+            "date": "2025-12-22",
+            "type": "DEBIT",
+            "amount": 190135.71,
+            "narration": "CHQ CLG / 885548 / PAID TO Reliance Retail",
+            "balance": 3332050.59
+        },
+        {
+            "date": "2025-12-23",
+            "type": "CREDIT",
+            "amount": 444534.26,
+            "narration": "IMPS CR / Infosys Ltd / IMPS_REF_240891",
+            "balance": 3776584.85
+        },
+        {
+            "date": "2025-12-24",
+            "type": "DEBIT",
+            "amount": 682825.44,
+            "narration": "UPI DR / pay@jindalsteel&power / PAYMENT_TO_VENDOR",
+            "balance": 3093759.41
+        },
+        {
+            "date": "2025-12-25",
+            "type": "CREDIT",
+            "amount": 460731.34,
+            "narration": "IMPS CR / Jindal Steel & Power / IMPS_REF_123329",
+            "balance": 3554490.75
+        },
+        {
+            "date": "2025-12-26",
+            "type": "DEBIT",
+            "amount": 126496.55,
+            "narration": "UPI DR / pay@jindalsteel&power / PAYMENT_TO_VENDOR",
+            "balance": 3427994.2
+        },
+        {
+            "date": "2025-12-27",
+            "type": "DEBIT",
+            "amount": 186375.01,
+            "narration": "RTGS DR / Infosys Ltd / CORE_BANK",
+            "balance": 3241619.19
+        },
+        {
+            "date": "2026-01-01",
+            "type": "DEBIT",
+            "amount": 96781.88,
+            "narration": "CHQ CLG / 335081 / PAID TO Supreme Industries",
+            "balance": 3144837.31
+        },
+        {
+            "date": "2026-01-02",
+            "type": "CREDIT",
+            "amount": 243868.05,
+            "narration": "CHQ DEP / 856109 / DEPOSIT FROM Godrej Properties",
+            "balance": 3388705.36
+        },
+        {
+            "date": "2026-01-03",
+            "type": "DEBIT",
+            "amount": 112846.29,
+            "narration": "RTGS DR / Ambika Trading Corp / CORE_BANK",
+            "balance": 3275859.07
+        },
+        {
+            "date": "2026-01-04",
+            "type": "CREDIT",
+            "amount": 174941.24,
+            "narration": "CHQ DEP / 502634 / DEPOSIT FROM Infosys Ltd",
+            "balance": 3450800.31
+        },
+        {
+            "date": "2026-01-05",
+            "type": "DEBIT",
+            "amount": 214483.82,
+            "narration": "RTGS DR / Balaji Logistics / CORE_BANK",
+            "balance": 3236316.49
+        },
+        {
+            "date": "2026-01-06",
+            "type": "CREDIT",
+            "amount": 192868.35,
+            "narration": "NEFT CR / Supreme Industries / NET_BANK",
+            "balance": 3429184.84
+        },
+        {
+            "date": "2026-01-07",
+            "type": "DEBIT",
+            "amount": 278847.08,
+            "narration": "RTGS DR / Jindal Steel & Power / CORE_BANK",
+            "balance": 3150337.76
+        },
+        {
+            "date": "2026-01-08",
+            "type": "DEBIT",
+            "amount": 134200.17,
+            "narration": "UPI DR / pay@relianceretail / PAYMENT_TO_VENDOR",
+            "balance": 3016137.59
+        },
+        {
+            "date": "2026-01-09",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "UPI DR / pay@godrejproperties / PAYMENT_TO_VENDOR",
+            "balance": 2450626.23
+        },
+        {
+            "date": "2026-01-10",
+            "type": "CREDIT",
+            "amount": 250396.03,
+            "narration": "NEFT CR / Infosys Ltd / NET_BANK",
+            "balance": 2701022.26
+        },
+        {
+            "date": "2026-01-11",
+            "type": "CREDIT",
+            "amount": 1103772.99,
+            "narration": "RTGS CR / Kirloskar Brothers / CORE_BANK",
+            "balance": 3804795.25
+        },
+        {
+            "date": "2026-01-12",
+            "type": "CREDIT",
+            "amount": 364406.87,
+            "narration": "UPI CR / pay@balajilogistics / PAYMENT_RCVD",
+            "balance": 4169202.12
+        },
+        {
+            "date": "2026-01-13",
+            "type": "DEBIT",
+            "amount": 257622.13,
+            "narration": "UPI DR / pay@godrejproperties / PAYMENT_TO_VENDOR",
+            "balance": 3911579.99
+        },
+        {
+            "date": "2026-01-15",
+            "type": "DEBIT",
+            "amount": 255804.32,
+            "narration": "CHQ CLG / 995112 / PAID TO Shree Cement",
+            "balance": 3655775.67
+        },
+        {
+            "date": "2026-01-16",
+            "type": "DEBIT",
+            "amount": 184064.46,
+            "narration": "NEFT DR / Reliance Retail / NET_BANK",
+            "balance": 3471711.21
+        },
+        {
+            "date": "2026-01-17",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 421709 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 3471361.21
+        },
+        {
+            "date": "2026-01-18",
+            "type": "CREDIT",
+            "amount": 296875.1,
+            "narration": "CHQ DEP / 281397 / DEPOSIT FROM Balaji Logistics",
+            "balance": 3768236.31
+        },
+        {
+            "date": "2026-01-19",
+            "type": "DEBIT",
+            "amount": 240557.07,
+            "narration": "UPI DR / pay@karantraders / PAYMENT_TO_VENDOR",
+            "balance": 3527679.24
+        },
+        {
+            "date": "2026-01-20",
+            "type": "DEBIT",
+            "amount": -575019.31,
+            "narration": "RTGS DR / Saraswati Enterprises / CORE_BANK",
+            "balance": 4102698.55
+        },
+        {
+            "date": "2026-01-21",
+            "type": "DEBIT",
+            "amount": 124757.65,
+            "narration": "UPI DR / pay@shreecement / PAYMENT_TO_VENDOR",
+            "balance": 3977940.9
+        },
+        {
+            "date": "2026-01-22",
+            "type": "DEBIT",
+            "amount": 141104.27,
+            "narration": "CHQ CLG / 647483 / PAID TO Godrej Properties",
+            "balance": 3836836.63
+        },
+        {
+            "date": "2026-01-23",
+            "type": "DEBIT",
+            "amount": 221417.61,
+            "narration": "UPI DR / pay@tatapower / PAYMENT_TO_VENDOR",
+            "balance": 3615419.02
+        },
+        {
+            "date": "2026-01-24",
+            "type": "CREDIT",
+            "amount": 310247.37,
+            "narration": "NEFT CR / Infosys Ltd / NET_BANK",
+            "balance": 3925666.39
+        },
+        {
+            "date": "2026-01-25",
+            "type": "DEBIT",
+            "amount": 86359.49,
+            "narration": "NEFT DR / Karan Traders / NET_BANK",
+            "balance": 3839306.9
+        },
+        {
+            "date": "2026-01-26",
+            "type": "DEBIT",
+            "amount": 243209.27,
+            "narration": "CHQ CLG / 976046 / PAID TO Supreme Industries",
+            "balance": 3596097.63
+        },
+        {
+            "date": "2026-01-27",
+            "type": "DEBIT",
+            "amount": 217257.52,
+            "narration": "NEFT DR / Shree Cement / NET_BANK",
+            "balance": 3378840.11
+        },
+        {
+            "date": "2026-02-01",
+            "type": "CREDIT",
+            "amount": 546122.01,
+            "narration": "UPI CR / pay@saraswatienterprises / PAYMENT_RCVD",
+            "balance": 3924962.12
+        },
+        {
+            "date": "2026-02-02",
+            "type": "DEBIT",
+            "amount": 92215.52,
+            "narration": "RTGS DR / Tata Power / CORE_BANK",
+            "balance": 3832746.6
+        },
+        {
+            "date": "2026-02-03",
+            "type": "DEBIT",
+            "amount": 226242.25,
+            "narration": "UPI DR / pay@ambikatradingcorp / PAYMENT_TO_VENDOR",
+            "balance": 3606504.35
+        },
+        {
+            "date": "2026-02-04",
+            "type": "DEBIT",
+            "amount": 209972.84,
+            "narration": "NEFT DR / Jindal Steel & Power / NET_BANK",
+            "balance": 3396531.51
+        },
+        {
+            "date": "2026-02-05",
+            "type": "DEBIT",
+            "amount": 107062.76,
+            "narration": "IMPS DR / Jindal Steel & Power / IMPS_REF_780606",
+            "balance": 3289468.75
+        },
+        {
+            "date": "2026-02-06",
+            "type": "CREDIT",
+            "amount": 462276.0,
+            "narration": "RTGS CR / Ambika Trading Corp / CORE_BANK",
+            "balance": 3751744.75
+        },
+        {
+            "date": "2026-02-07",
+            "type": "CREDIT",
+            "amount": 297722.7,
+            "narration": "CHQ DEP / 330272 / DEPOSIT FROM Shree Cement",
+            "balance": 4049467.45
+        },
+        {
+            "date": "2026-02-08",
+            "type": "DEBIT",
+            "amount": 285621.89,
+            "narration": "RTGS DR / Karan Traders / CORE_BANK",
+            "balance": 3763845.56
+        },
+        {
+            "date": "2026-02-09",
+            "type": "DEBIT",
+            "amount": 260388.66,
+            "narration": "UPI DR / pay@kirloskarbrothers / PAYMENT_TO_VENDOR",
+            "balance": 3503456.9
+        },
+        {
+            "date": "2026-02-11",
+            "type": "CREDIT",
+            "amount": 227481.55,
+            "narration": "NEFT CR / Godrej Properties / NET_BANK",
+            "balance": 3730938.45
+        },
+        {
+            "date": "2026-02-12",
+            "type": "CREDIT",
+            "amount": 253650.61,
+            "narration": "RTGS CR / Jindal Steel & Power / CORE_BANK",
+            "balance": 3984589.06
+        },
+        {
+            "date": "2026-02-13",
+            "type": "DEBIT",
+            "amount": 81352.32,
+            "narration": "UPI DR / pay@infosysltd / PAYMENT_TO_VENDOR",
+            "balance": 3903236.74
+        },
+        {
+            "date": "2026-02-14",
+            "type": "DEBIT",
+            "amount": 115248.81,
+            "narration": "IMPS DR / Saraswati Enterprises / IMPS_REF_325920",
+            "balance": 3787987.93
+        },
+        {
+            "date": "2026-02-15",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 236579 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 3787637.93
+        },
+        {
+            "date": "2026-02-16",
+            "type": "DEBIT",
+            "amount": 200556.56,
+            "narration": "IMPS DR / Kirloskar Brothers / IMPS_REF_277812",
+            "balance": 3587081.37
+        },
+        {
+            "date": "2026-02-17",
+            "type": "DEBIT",
+            "amount": 216123.93,
+            "narration": "NEFT DR / Shree Cement / NET_BANK",
+            "balance": 3370957.44
+        },
+        {
+            "date": "2026-02-18",
+            "type": "CREDIT",
+            "amount": 431285.37,
+            "narration": "CHQ DEP / 238679 / DEPOSIT FROM Tata Power",
+            "balance": 3802242.81
+        },
+        {
+            "date": "2026-02-20",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "NEFT DR / Jindal Steel & Power / NET_BANK",
+            "balance": 3236731.45
+        },
+        {
+            "date": "2026-02-21",
+            "type": "CREDIT",
+            "amount": 225820.92,
+            "narration": "NEFT CR / Supreme Industries / NET_BANK",
+            "balance": 3462552.37
+        },
+        {
+            "date": "2026-02-22",
+            "type": "CREDIT",
+            "amount": 366208.33,
+            "narration": "IMPS CR / Karan Traders / IMPS_REF_127341",
+            "balance": 3828760.7
+        },
+        {
+            "date": "2026-02-23",
+            "type": "DEBIT",
+            "amount": 153666.4,
+            "narration": "CHQ CLG / 493902 / PAID TO Reliance Retail",
+            "balance": 3675094.3
+        },
+        {
+            "date": "2026-02-24",
+            "type": "DEBIT",
+            "amount": 163600.74,
+            "narration": "RTGS DR / Ambika Trading Corp / CORE_BANK",
+            "balance": 3511493.56
+        },
+        {
+            "date": "2026-02-25",
+            "type": "CREDIT",
+            "amount": 321035.01,
+            "narration": "UPI CR / pay@shreecement / PAYMENT_RCVD",
+            "balance": 3832528.57
+        },
+        {
+            "date": "2026-02-26",
+            "type": "DEBIT",
+            "amount": 213439.16,
+            "narration": "RTGS DR / Tata Power / CORE_BANK",
+            "balance": 3619089.41
+        },
+        {
+            "date": "2026-02-27",
+            "type": "DEBIT",
+            "amount": 93931.84,
+            "narration": "UPI DR / pay@jindalsteel&power / PAYMENT_TO_VENDOR",
+            "balance": 3525157.57
+        },
+        {
+            "date": "2026-03-01",
+            "type": "DEBIT",
+            "amount": 228011.88,
+            "narration": "IMPS DR / Saraswati Enterprises / IMPS_REF_736633",
+            "balance": 3297145.69
+        },
+        {
+            "date": "2026-03-02",
+            "type": "DEBIT",
+            "amount": 294028.15,
+            "narration": "CHQ CLG / 391168 / PAID TO Jindal Steel & Power",
+            "balance": 3003117.54
+        },
+        {
+            "date": "2026-03-03",
+            "type": "CREDIT",
+            "amount": 219935.91,
+            "narration": "CHQ DEP / 358470 / DEPOSIT FROM Karan Traders",
+            "balance": 3223053.45
+        },
+        {
+            "date": "2026-03-04",
+            "type": "DEBIT",
+            "amount": 292592.4,
+            "narration": "UPI DR / pay@karantraders / PAYMENT_TO_VENDOR",
+            "balance": 2930461.05
+        },
+        {
+            "date": "2026-03-05",
+            "type": "CREDIT",
+            "amount": 498827.2,
+            "narration": "UPI CR / pay@tatapower / PAYMENT_RCVD",
+            "balance": 3429288.25
+        },
+        {
+            "date": "2026-03-06",
+            "type": "CREDIT",
+            "amount": -370191.26,
+            "narration": "UPI CR / pay@kirloskarbrothers / PAYMENT_RCVD",
+            "balance": 3059096.99
+        },
+        {
+            "date": "2026-03-07",
+            "type": "CREDIT",
+            "amount": 428262.92,
+            "narration": "CHQ DEP / 545666 / DEPOSIT FROM Karan Traders",
+            "balance": 3487359.91
+        },
+        {
+            "date": "2026-03-08",
+            "type": "CREDIT",
+            "amount": 371906.97,
+            "narration": "NEFT CR / Godrej Properties / NET_BANK",
+            "balance": 3859266.88
+        },
+        {
+            "date": "2026-03-09",
+            "type": "CREDIT",
+            "amount": 478090.0,
+            "narration": "IMPS CR / Godrej Properties / IMPS_REF_834611",
+            "balance": 4337356.88
+        },
+        {
+            "date": "2026-03-10",
+            "type": "DEBIT",
+            "amount": 350.0,
+            "narration": "CHQ RETURN / 893780 / INSUFFICIENT FUNDS / DEBIT_FEE_350",
+            "balance": 4337006.88
+        },
+        {
+            "date": "2026-03-11",
+            "type": "DEBIT",
+            "amount": 130903.65,
+            "narration": "RTGS DR / Jindal Steel & Power / CORE_BANK",
+            "balance": 4206103.23
+        },
+        {
+            "date": "2026-03-12",
+            "type": "DEBIT",
+            "amount": 159906.68,
+            "narration": "RTGS DR / Infosys Ltd / CORE_BANK",
+            "balance": 4046196.55
+        },
+        {
+            "date": "2026-03-13",
+            "type": "DEBIT",
+            "amount": 155745.05,
+            "narration": "IMPS DR / Kirloskar Brothers / IMPS_REF_511306",
+            "balance": 3890451.5
+        },
+        {
+            "date": "2026-03-14",
+            "type": "DEBIT",
+            "amount": 296426.98,
+            "narration": "NEFT DR / Godrej Properties / NET_BANK",
+            "balance": 3594024.52
+        },
+        {
+            "date": "2026-03-15",
+            "type": "DEBIT",
+            "amount": 261632.94,
+            "narration": "UPI DR / pay@infosysltd / PAYMENT_TO_VENDOR",
+            "balance": 3332391.58
+        },
+        {
+            "date": "2026-03-16",
+            "type": "CREDIT",
+            "amount": 247145.56,
+            "narration": "UPI CR / pay@godrejproperties / PAYMENT_RCVD",
+            "balance": 3579537.14
+        },
+        {
+            "date": "2026-03-17",
+            "type": "DEBIT",
+            "amount": -407499.74,
+            "narration": "CHQ CLG / 485261 / PAID TO Supreme Industries",
+            "balance": 3987036.88
+        },
+        {
+            "date": "2026-03-18",
+            "type": "DEBIT",
+            "amount": 167914.16,
+            "narration": "CHQ CLG / 416311 / PAID TO Karan Traders",
+            "balance": 3819122.72
+        },
+        {
+            "date": "2026-03-19",
+            "type": "DEBIT",
+            "amount": 291584.72,
+            "narration": "UPI DR / pay@supremeindustries / PAYMENT_TO_VENDOR",
+            "balance": 3527538.0
+        },
+        {
+            "date": "2026-03-20",
+            "type": "DEBIT",
+            "amount": 179654.98,
+            "narration": "UPI DR / pay@kirloskarbrothers / PAYMENT_TO_VENDOR",
+            "balance": 3347883.02
+        },
+        {
+            "date": "2026-03-21",
+            "type": "CREDIT",
+            "amount": 297103.4,
+            "narration": "CHQ DEP / 550767 / DEPOSIT FROM Kirloskar Brothers",
+            "balance": 3644986.42
+        },
+        {
+            "date": "2026-03-22",
+            "type": "CREDIT",
+            "amount": 445010.17,
+            "narration": "RTGS CR / Kirloskar Brothers / CORE_BANK",
+            "balance": 4089996.59
+        },
+        {
+            "date": "2026-03-23",
+            "type": "DEBIT",
+            "amount": 565511.36,
+            "narration": "IMPS DR / Reliance Retail / IMPS_REF_392583",
+            "balance": 3524485.23
+        },
+        {
+            "date": "2026-03-24",
+            "type": "DEBIT",
+            "amount": 290647.11,
+            "narration": "IMPS DR / Balaji Logistics / IMPS_REF_897989",
+            "balance": 3233838.12
+        },
+        {
+            "date": "2026-03-25",
+            "type": "DEBIT",
+            "amount": 136571.09,
+            "narration": "UPI DR / pay@jindalsteel&power / PAYMENT_TO_VENDOR",
+            "balance": 3097267.03
+        },
+        {
+            "date": "2026-03-26",
+            "type": "DEBIT",
+            "amount": 177378.3,
+            "narration": "CHQ CLG / 737574 / PAID TO Supreme Industries",
+            "balance": 2919888.73
+        },
+        {
+            "date": "2026-03-27",
+            "type": "CREDIT",
+            "amount": 418448.86,
+            "narration": "RTGS CR / Karan Traders / CORE_BANK",
+            "balance": 3338337.59
+        },
+        {
+            "date": "2026-03-28",
+            "type": "CREDIT",
+            "amount": 344737.2,
+            "narration": "CHQ DEP / 778138 / DEPOSIT FROM Ambika Trading Corp",
+            "balance": 3683074.79
+        }
+    ],
+    "starting_balance": 872049.32,
+    "ending_balance": 3683074.79,
+    "total_credits": 39442276.0,
+    "total_debits": 36631250.53,
+    "avg_monthly_balance": 2767440.38,
+    "bounce_count": 12,
+    "company_id": "company_01969"
+}

@@ -4,31 +4,31 @@ import random
 import time
 from urllib import request
 
-from config import ACTIAN_CLOUD_API_URL, ACTIAN_API_KEY, ACTIAN_LOCAL_DIR
+from config import CLOUD_API_URL, CLOUD_API_KEY, LOCAL_STORAGE_DIR
 
 
 class EdgeCloudSyncWorker:
     """
-    Lightweight sync worker for Actian edge mode.
+    Lightweight sync worker for edge mode.
 
     Reads append-only local event log and pushes unsynced records to cloud endpoint.
     """
 
     def __init__(self):
-        self.event_log_path = os.path.join(ACTIAN_LOCAL_DIR, "event_log.jsonl")
+        self.event_log_path = os.path.join(LOCAL_STORAGE_DIR, "event_log.jsonl")
 
     def _post_event(self, event: dict) -> bool:
-        if not ACTIAN_CLOUD_API_URL:
+        if not CLOUD_API_URL:
             return False
 
         payload = json.dumps(event).encode("utf-8")
         req = request.Request(
-            f"{ACTIAN_CLOUD_API_URL.rstrip('/')}/sync/events",
+            f"{CLOUD_API_URL.rstrip('/')}/sync/events",
             data=payload,
             method="POST",
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {ACTIAN_API_KEY}",
+                "Authorization": f"Bearer {CLOUD_API_KEY}",
             },
         )
 

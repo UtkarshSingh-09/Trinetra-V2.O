@@ -1,0 +1,68 @@
+{{- range $name, $config := .Values.agents.list }}
+{{- if $config.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "trinetra.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "trinetra.labels" $ | nindent 4 }}
+    agent: {{ $name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+    spec:
+      containers:
+        - name: agent
+          image: {{ default $.Values.agents.defaults.image $config.image | quote }}
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          command: ["python", "{{ $name }}/main.py"]
+          env:
+            - name: REDIS_URL
+              value: "redis://{{ include "trinetra.fullname" $ }}-redis:6379"
+            - name: BACKEND_URL
+              value: "http://{{ include "trinetra.fullname" $ }}-backend:8080"
+            - name: QDRANT_URL
+              value: "http://{{ include "trinetra.fullname" $ }}-qdrant:6333"
+            - name: VECTORAI_URL
+              value: "http://{{ include "trinetra.fullname" $ }}-qdrant:6333"
+            - name: DATABASE_URL
+              value: "postgresql://{{ $.Values.postgres.username }}:{{ $.Values.postgres.password }}@{{ include "trinetra.fullname" $ }}-postgres:5432/{{ $.Values.postgres.database }}"
+            - name: OLLAMA_URL
+              value: "http://{{ include "trinetra.fullname" $ }}-ollama:11434"
+            - name: OLLAMA_MODEL
+              value: {{ $.Values.ollama.model | quote }}
+          resources:
+            {{- toYaml $config.resources | nindent 12 }}
+---
+{{- if $.Values.agents.defaults.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "trinetra.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "trinetra.labels" $ | nindent 4 }}
+    agent: {{ $name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "trinetra.fullname" $ }}-{{ $name }}
+  minReplicas: {{ $.Values.agents.defaults.hpa.minReplicas }}
+  maxReplicas: {{ $.Values.agents.defaults.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $.Values.agents.defaults.hpa.targetCPUUtilizationPercentage }}
+---
+{{- end }}
+{{- end }}
+{{- end }}

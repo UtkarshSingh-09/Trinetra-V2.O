@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "trinetra.fullname" . }}-ollama-pvc
+  labels:
+    {{- include "trinetra.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.ollama.persistence.size | quote }}
+  {{- if .Values.global.storageClass }}
+  storageClassName: {{ .Values.global.storageClass | quote }}
+  {{- end }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "trinetra.fullname" . }}-ollama
+  labels:
+    {{- include "trinetra.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "trinetra.fullname" . }}-ollama
+  replicas: {{ .Values.ollama.replicaCount }}
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+        - name: ollama
+          image: {{ .Values.ollama.image | quote }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: 11434
+              name: api
+          volumeMounts:
+            - name: ollama-storage
+              mountPath: /root/.ollama
+          resources:
+            {{- toYaml .Values.ollama.resources | nindent 12 }}
+      volumes:
+        - name: ollama-storage
+          persistentVolumeClaim:
+            claimName: {{ include "trinetra.fullname" . }}-ollama-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "trinetra.fullname" . }}-ollama
+  labels:
+    {{- include "trinetra.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 11434
+      targetPort: 11434
+      name: api
+  selector:
+    app: ollama

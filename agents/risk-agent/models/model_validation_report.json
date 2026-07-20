@@ -1,0 +1,39 @@
+{
+    "validation_timestamp": "2026-06-21T20:40:38.358774",
+    "discriminatory_power": {
+        "auc": 1.0,
+        "gini": 1.0,
+        "ks_statistic": 1.0
+    },
+    "concentration_risk": {
+        "herfindahl_index": 0.7135139999999999,
+        "band_distribution": {
+            "VL": 0.827,
+            "VH": 0.172,
+            "M": 0.001,
+            "L": 0.0,
+            "H": 0.0
+        }
+    },
+    "calibration_deciles": {
+        "0": {
+            "avg_prob": 0.0016984816174954176,
+            "actual_rate": 0.0
+        },
+        "1": {
+            "avg_prob": 0.8758718967437744,
+            "actual_rate": 0.8730964467005076
+        }
+    },
+    "geographic_fairness_audit": {
+        "Delhi": 1.0,
+        "Gujarat": 1.0,
+        "Haryana": 1.0,
+        "Karnataka": 1.0,
+        "Maharashtra": 1.0,
+        "Tamil Nadu": 1.0,
+        "Telangana": 1.0,
+        "Uttar Pradesh": 1.0,
+        "West Bengal": 1.0
+    }
+}

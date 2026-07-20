@@ -1,0 +1,131 @@
+{
+  "summary": {
+    "total": 17,
+    "passed": 17,
+    "failed": 0,
+    "success_rate": 100.0,
+    "duration_seconds": 13.844
+  },
+  "tests": [
+    {
+      "name": "test_password_hashing",
+      "module": "test_auth.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_token_creation_and_verification",
+      "module": "test_auth.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_token_expiration",
+      "module": "test_auth.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_invalid_token_signatures",
+      "module": "test_auth.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_bank_reconciliation_divergence",
+      "module": "test_bank_recon.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_bias_decision_stability",
+      "module": "test_bias.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_cam_document_generation",
+      "module": "test_cam.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_compliance_all_files_uploaded",
+      "module": "test_compliance.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_compliance_missing_files",
+      "module": "test_compliance.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_indian_number_normalization",
+      "module": "test_doc_intel.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_itc_discrepancy_calculation",
+      "module": "test_gst.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_circular_trading_cycle_detection",
+      "module": "test_gst.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_feature_normalization",
+      "module": "test_risk.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_risk_band_assignments",
+      "module": "test_risk.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_active_model_resolver",
+      "module": "test_risk.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_dynamic_imputation_engine",
+      "module": "test_risk.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    },
+    {
+      "name": "test_stressed_dscr_calculation",
+      "module": "test_stress.py",
+      "status": "PASSED",
+      "duration": 0.814,
+      "error": ""
+    }
+  ],
+  "run_at": "2026-06-15T19:33:15.597472"
+}

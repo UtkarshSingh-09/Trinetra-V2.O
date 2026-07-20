@@ -122,8 +122,8 @@ VECTORAI_COLLECTIONS = [
 
 def _pick_sample_pdf() -> Path | None:
     candidates = [
-        Path(__file__).resolve().parents[1] / "actian_local" / "files",
-        Path(__file__).resolve().parent / "actian_local" / "files",
+        Path(__file__).resolve().parents[1] / "local_storage" / "files",
+        Path(__file__).resolve().parent / "local_storage" / "files",
     ]
     for base in candidates:
         if not base.exists():

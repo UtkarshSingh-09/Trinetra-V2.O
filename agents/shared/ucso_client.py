@@ -10,11 +10,14 @@ Migration: Spring Boot -> FastAPI (March 2026)
 import os
 import requests
 from .logger import get_logger
+from .schema import validate_namespace
 
 logger = get_logger("ucso-client")
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080")
 AGENT_SERVICE_TOKEN = os.getenv("AGENT_SERVICE_TOKEN", "")
+if not AGENT_SERVICE_TOKEN:
+    logger.warning("⚠️ AGENT_SERVICE_TOKEN not set — agent requests may fail authentication.")
 
 
 class UcsoClient:
@@ -42,7 +45,10 @@ class UcsoClient:
         """
         url = f"{self.base_url}/api/application/{application_id}"
         try:
-            resp = requests.get(url, timeout=10)
+            headers = {}
+            if AGENT_SERVICE_TOKEN:
+                headers["X-Agent-Token"] = AGENT_SERVICE_TOKEN
+            resp = requests.get(url, headers=headers, timeout=10)
             resp.raise_for_status()
             data = resp.json()
             # FastAPI returns raw UCSO directly (no ucsoData wrapper)
@@ -63,6 +69,9 @@ class UcsoClient:
         Returns:
             The updated UCSO dictionary.
         """
+        # Validate schema before dispatching
+        validate_namespace(namespace, data)
+        
         url = f"{self.base_url}/api/application/{application_id}/namespace/{namespace}"
         try:
             headers = {}
@@ -96,7 +105,10 @@ class UcsoClient:
             files = {"file": f}
             data = {"application_id": application_id, "type": doc_type}
             try:
-                resp = requests.post(url, files=files, data=data, timeout=30)
+                headers = {}
+                if AGENT_SERVICE_TOKEN:
+                    headers["X-Agent-Token"] = AGENT_SERVICE_TOKEN
+                resp = requests.post(url, files=files, data=data, headers=headers, timeout=30)
                 resp.raise_for_status()
                 result = resp.json()
                 # Return storage_path (also available as s3_key for backward compat)

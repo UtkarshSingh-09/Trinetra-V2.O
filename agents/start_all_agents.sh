@@ -1,6 +1,6 @@
 #!/bin/bash
 # ╔══════════════════════════════════════════════════════════╗
-# ║  TRINETRA — Start All 13 Agents                         ║
+# ║  TRINETRA — Start All 14 Agents                         ║
 # ║  Each agent runs as a separate background process        ║
 # ╚══════════════════════════════════════════════════════════╝
 
@@ -24,7 +24,7 @@ BACKEND_URL="${BACKEND_URL:-http://localhost:8080}"
 REDIS_URL="${REDIS_URL:-redis://localhost:6379}"
 
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║   TRINETRA — Starting All 13 Agents                     ║"
+echo "║   TRINETRA — Starting All 14 Agents                     ║"
 echo "╠══════════════════════════════════════════════════════════╣"
 echo "║  Backend:  ${BACKEND_URL}                                ║"
 echo "║  Redis:    ${REDIS_URL}                                  ║"
@@ -62,6 +62,7 @@ mkdir -p logs
 
 # ── Start each agent as a background process ──
 AGENTS=(
+    "pan-agent"
     "compliance-agent"
     "doc-agent"
     "pd-agent"

@@ -22,8 +22,11 @@ class RedisBroker:
         self.pubsub = None
 
     def publish(self, channel: str, message: dict):
-        """Publish an event to a Redis channel (replaces Kafka producer)."""
-        self.client.publish(channel, json.dumps(message))
+        """Publish an event. Transient status goes to Pub/Sub, tasks go to Streams."""
+        if channel == "agent_status":
+            self.client.publish(channel, json.dumps(message))
+        else:
+            self.client.xadd(f"stream:{channel}", {"payload": json.dumps(message)})
 
     def subscribe(self, channels: list[str]):
         """Subscribe to Redis channels (replaces Kafka consumer)."""
@@ -77,7 +80,10 @@ class AsyncRedisBroker:
         """Publish event asynchronously."""
         if not self.client:
             await self.connect()
-        await self.client.publish(channel, json.dumps(message))
+        if channel == "agent_status":
+            await self.client.publish(channel, json.dumps(message))
+        else:
+            await self.client.xadd(f"stream:{channel}", {"payload": json.dumps(message)})
 
     async def subscribe(self, *channels: str):
         """Subscribe to channels."""
@@ -110,3 +116,4 @@ class AsyncRedisBroker:
             await self.pubsub.close()
         if self.client:
             await self.client.close()
+

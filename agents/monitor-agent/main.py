@@ -126,7 +126,7 @@ class MonitorAgent(AgentBase):
                 "timestamp": now,
             })
             self.logger.warning(
-                f"KB_STALE: Actian VectorAI data is {kb_hours}h old for {application_id}",
+                f"KB_STALE: Qdrant data is {kb_hours}h old for {application_id}",
                 extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
             )
 

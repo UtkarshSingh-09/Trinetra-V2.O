@@ -1,6 +1,6 @@
 """
-Seed Actian VectorAI (official beta SDK) with demo intelligence data.
-Run once after starting the VectorAI gRPC container:
+Seed Qdrant Vector DB with demo intelligence data.
+Run once after starting the Qdrant container:
     cd agents && python3 seed_vectorai.py
 """
 
@@ -10,13 +10,21 @@ import os
 import uuid
 from datetime import datetime, timezone
 
-from actian_vectorai import Distance, PointStruct, VectorAIClient, VectorParams
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
 from sentence_transformers import SentenceTransformer
 
 
-VECTORAI_URL = os.getenv("VECTORAI_URL", "localhost:50051")
+VECTORAI_URL = os.getenv("QDRANT_URL") or os.getenv("VECTORAI_URL", "http://localhost:6333")
 EMBEDDING_MODEL = os.getenv("VECTORAI_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 EMBEDDING_DIM = int(os.getenv("VECTORAI_EMBEDDING_DIM", "384"))
+
+# Normalize url format
+if not VECTORAI_URL.startswith("http://") and not VECTORAI_URL.startswith("https://"):
+    if "50051" in VECTORAI_URL:
+        VECTORAI_URL = "http://localhost:6333"
+    else:
+        VECTORAI_URL = f"http://{VECTORAI_URL}"
 
 COLLECTIONS = [
     "document_chunks",
@@ -36,26 +44,27 @@ COLLECTIONS = [
 ]
 
 MODEL = SentenceTransformer(EMBEDDING_MODEL)
+client = QdrantClient(url=VECTORAI_URL)
 
 
 def embed(text: str) -> list[float]:
     return MODEL.encode(text).tolist()
 
 
-def ensure_collection(client: VectorAIClient, name: str) -> bool:
+def ensure_collection(client: QdrantClient, name: str) -> bool:
     try:
-        if client.collections.exists(name):
+        if client.collection_exists(name):
             return True
-        client.collections.create(
-            name,
-            vectors_config=VectorParams(size=EMBEDDING_DIM, distance=Distance.Cosine),
+        client.create_collection(
+            collection_name=name,
+            vectors_config=VectorParams(size=EMBEDDING_DIM, distance=Distance.COSINE),
         )
         return True
     except Exception:
         return False
 
 
-def upsert_docs(client: VectorAIClient, collection: str, docs: list[dict]) -> int:
+def upsert_docs(client: QdrantClient, collection: str, docs: list[dict]) -> int:
     if not docs:
         return 0
     points = []
@@ -72,7 +81,7 @@ def upsert_docs(client: VectorAIClient, collection: str, docs: list[dict]) -> in
                 payload=payload,
             )
         )
-    client.points.upsert(collection, points)
+    client.upsert(collection_name=collection, points=points)
     return len(points)
 
 
@@ -254,10 +263,7 @@ SEED_DATA: dict[str, list[dict]] = {
 
 
 def main() -> None:
-    client = VectorAIClient(VECTORAI_URL)
-    client.connect()
-
-    print(f"Connecting to Actian VectorAI at {VECTORAI_URL} ...")
+    print(f"Connecting to Qdrant at {VECTORAI_URL} ...")
     print("Creating all 14 collections...")
     for name in COLLECTIONS:
         ok = ensure_collection(client, name)
