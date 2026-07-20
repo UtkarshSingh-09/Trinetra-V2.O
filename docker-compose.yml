@@ -88,6 +88,7 @@ services:
     build:
       context: ./agents
       dockerfile: Dockerfile
+    image: trinetra-agent:latest
     container_name: agent-compliance
     command: python compliance-agent/main.py
     environment: &agent-env
@@ -114,6 +115,7 @@ services:
 
   doc-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-doc
     command: python doc-agent/main.py
     environment: *agent-env
@@ -123,6 +125,7 @@ services:
 
   pd-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-pd
     command: python pd-agent/main.py
     environment: *agent-env
@@ -132,6 +135,7 @@ services:
 
   gst-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-gst
     command: python gst-agent/main.py
     environment: *agent-env
@@ -141,6 +145,7 @@ services:
 
   bank-recon-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-bank-recon
     command: python bank-recon-agent/main.py
     environment: *agent-env
@@ -150,6 +155,7 @@ services:
 
   mca-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-mca
     command: python mca-agent/main.py
     environment: *agent-env
@@ -159,6 +165,7 @@ services:
 
   web-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-web
     command: python web-agent/main.py
     environment: *agent-env
@@ -168,6 +175,7 @@ services:
 
   model-selector-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-model-selector
     command: python model-selector-agent/main.py
     environment: *agent-env
@@ -177,6 +185,7 @@ services:
 
   risk-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-risk
     command: python risk-agent/main.py
     environment: *agent-env
@@ -186,6 +195,7 @@ services:
 
   bias-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-bias
     command: python bias-agent/main.py
     environment: *agent-env
@@ -195,6 +205,7 @@ services:
 
   stress-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-stress
     command: python stress-agent/main.py
     environment: *agent-env
@@ -204,6 +215,7 @@ services:
 
   cam-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-cam
     command: python cam-agent/main.py
     environment: *agent-env
@@ -213,6 +225,7 @@ services:
 
   monitor-agent:
     build: ./agents
+    image: trinetra-agent:latest
     container_name: agent-monitor
     command: python monitor-agent/main.py
     environment: *agent-env
