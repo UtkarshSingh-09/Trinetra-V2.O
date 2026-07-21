@@ -101,6 +101,26 @@ class PostgresStorageAdapter(StorageClient):
             logger.info("🔌 Verifying PostgreSQL async connection...")
             async with self.engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
+                from sqlalchemy import text
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS outbox_events (
+                        id VARCHAR(50) PRIMARY KEY,
+                        topic VARCHAR(100),
+                        payload JSONB,
+                        status VARCHAR(50) DEFAULT 'PENDING',
+                        created_at TIMESTAMP WITH TIME ZONE,
+                        processed_at TIMESTAMP WITH TIME ZONE
+                    );
+                """))
+                await conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS event_logs (
+                        event_id VARCHAR(50) PRIMARY KEY,
+                        application_id VARCHAR(50),
+                        event_name VARCHAR(100),
+                        payload JSONB,
+                        created_at TIMESTAMP WITH TIME ZONE
+                    );
+                """))
             logger.info("✅ PostgreSQL tables verified/created.")
         except Exception as e:
             logger.warning(f"⚠️ PostgreSQL connection failed ({e}). Falling back to Local SQLite database.")
