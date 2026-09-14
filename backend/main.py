@@ -109,14 +109,14 @@ async def lifespan(app: FastAPI):
 #  FASTAPI APP DEFINITION
 # ═══════════════════════════════════════════════════════════
 app = FastAPI(
-    title="Trinetra OS — Backend API",
-    description="Central Orchestrator for Intelli-Credit Agentic AI System. The native Swagger UI can be used to interact with all UCSO namespaces, trigger agents, and authenticate users.",
+    title="TRISASTRA AI — Backend API",
+    description="Trilingual Intelligence for Credit, Risk & Compliance. Central Orchestrator for Credit Sastra, Risk Sastra, and Compliance Sastra.",
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
     contact={
-        "name": "Trinetra Developer Team",
+        "name": "TRISASTRA AI Developer Team",
         "url": "https://github.com/UtkarshSingh-09/Trinetra-V2.O",
     },
     lifespan=lifespan,

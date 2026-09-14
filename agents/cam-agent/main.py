@@ -441,12 +441,12 @@ def run_consistency_checks(context: dict, ucso: dict):
         context["cash_conversion_cycle"] = f"{wc_cycle:.0f} days"
 
 
-def generate_cam_document(ucso: dict, application_id: str = "unknown") -> tuple[str, str]:
+def generate_cam_document(ucso: dict, application_id: str = "unknown", lang: str = "en") -> tuple[str, str]:
     """
     Generate a Credit Appraisal Memo (CAM) as a Word document and a PDF.
 
     Phase 1: Build UCSO context
-    Phase 2: Call Groq LLM to get structured JSON with qualitative analysis
+    Phase 2: Call LLM (Sarvam AI for Telugu 'te', Groq for English 'en')
     Phase 3: Generate Matplotlib visualization charts and query peer analysis
     Phase 4: Render template using docxtpl
     Phase 5: Compile rendered DOCX to high-fidelity PDF using Pandoc + XeLaTeX
@@ -454,6 +454,9 @@ def generate_cam_document(ucso: dict, application_id: str = "unknown") -> tuple[
     Returns:
         Tuple of (docx_output_path, pdf_output_path)
     """
+    # Target language preference
+    target_lang = lang or ucso.get("lang") or ucso.get("language") or "en"
+
     # ── PHASE 1: Build UCSO Context ──
     applicant = ucso.get("applicant", {})
     financials = ucso.get("financials", {})
@@ -658,8 +661,173 @@ def generate_cam_document(ucso: dict, application_id: str = "unknown") -> tuple[
     else:
         ucso_json_str = json.dumps(ucso_summary, indent=2, default=str)[:5000]
 
-    # ── PHASE 2: Call Groq LLM ──
-    prompt = f"""You are a Senior Credit Analyst at a Tier-1 Indian bank.
+    # ── PHASE 2: Dynamic LLM Routing (Sarvam AI for Telugu, Groq for English) ──
+    if not data_insufficient:
+        if target_lang == "te":
+            # ──────────────────────────────────────────────────────────
+            # SARVAM AI API CALL FOR TELUGU
+            # ──────────────────────────────────────────────────────────
+            telugu_prompt = f"""You are a Senior Credit Analyst at a Tier-1 Indian bank.
+Given the following data from 13 AI agents analyzing a loan application, generate a JSON object with these exact keys in Telugu (తెలుగు) language.
+Write professionally in formal Telugu as if preparing for a credit committee.
+
+IMPORTANT GUIDELINES:
+- All values in the JSON should be written in Telugu language.
+- Rejection Reasons: Must include the exact items in risk.rejection_reasons if any exist.
+- State clearly that the overall Risk Band is '{final_band}'.
+
+Keys required (keep JSON key names in English, but string values in Telugu):
+- "executive_summary": 3-4 sentences in Telugu combining financial health, risk verdict, and recommendation
+- "business_overview": 2-3 sentences in Telugu describing what the company does and its market position
+- "key_strengths": list of 3-4 bullet-point strings in Telugu (positive indicators)
+- "key_concerns": list of 3-4 bullet-point strings in Telugu (risks/red flags)
+- "news_summary": 2-3 sentences in Telugu on promoter/company news sentiment.
+- "litigation_summary": 2-3 sentences in Telugu on litigation exposure
+- "sector_headwinds": 2-3 sentences in Telugu on industry challenges
+- "rejection_reasons": list of reasons in Telugu if decision is REJECT or MANDATORY REVIEW, else empty list
+- "corrective_actions": list of recommended actions in Telugu to improve credit profile
+- "bias_summary": 2-3 sentences in Telugu on whether the AI decision is fair and unbiased
+- "pd_transcript_summary": 2-3 sentences in Telugu summarizing personal discussion findings
+
+Return ONLY valid JSON. No markdown, no code blocks, no extra text.
+
+UCSO Data:
+{ucso_json_str}
+"""
+            print("Calling Sarvam AI API for Telugu CAM report synthesis...")
+            # SARVAM API KEY:
+            # Set the SARVAM_API_KEY environment variable or paste your key here
+            sarvam_api_key = os.environ.get("SARVAM_API_KEY", "")
+
+            sarvam_success = False
+            if sarvam_api_key:
+                try:
+                    import requests
+                    sarvam_url = "https://api.sarvam.ai/v1/chat/completions"
+                    sarvam_headers = {
+                        "api-subscription-key": sarvam_api_key,
+                        "Content-Type": "application/json"
+                    }
+                    sarvam_payload = {
+                        "model": "sarvam-2b",
+                        "messages": [{"role": "user", "content": telugu_prompt}],
+                        "temperature": 0.3,
+                        "max_tokens": 2000
+                    }
+                    sarvam_resp = requests.post(sarvam_url, headers=sarvam_headers, json=sarvam_payload, timeout=40)
+                    if sarvam_resp.status_code == 200:
+                        sarvam_data = sarvam_resp.json()
+                        llm_text = sarvam_data["choices"][0]["message"]["content"].strip()
+                        sarvam_success = True
+                except Exception as e:
+                    print(f"Sarvam AI request error: {e}")
+
+            if not sarvam_success:
+                # Fallback to Groq with Telugu instructions if Sarvam key is pending or request failed
+                api_key = os.environ.get("GROQ_API_KEY", "")
+                groq_model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+                client = Groq(api_key=api_key)
+                response = client.chat.completions.create(
+                    model=groq_model,
+                    max_tokens=2000,
+                    temperature=0.3,
+                    messages=[{"role": "user", "content": telugu_prompt}],
+                )
+                llm_text = response.choices[0].message.content.strip()
+
+            # Parse JSON from response
+            if "```json" in llm_text:
+                llm_json = json.loads(llm_text.split("```json")[1].split("```")[0].strip())
+            elif "```" in llm_text:
+                llm_json = json.loads(llm_text.split("```")[1].split("```")[0].strip())
+            else:
+                llm_json = json.loads(llm_text)
+
+        elif target_lang == "ta":
+            # ──────────────────────────────────────────────────────────
+            # SARVAM AI API CALL FOR TAMIL
+            # ──────────────────────────────────────────────────────────
+            tamil_prompt = f"""You are a Senior Credit Analyst at a Tier-1 Indian bank.
+Given the following data from 13 AI agents analyzing a loan application, generate a JSON object with these exact keys in Tamil (தமிழ்) language.
+Write professionally in formal Tamil as if preparing for a credit committee.
+
+IMPORTANT GUIDELINES:
+- All values in the JSON should be written in Tamil language.
+- Rejection Reasons: Must include the exact items in risk.rejection_reasons if any exist.
+- State clearly that the overall Risk Band is '{final_band}'.
+
+Keys required (keep JSON key names in English, but string values in Tamil):
+- "executive_summary": 3-4 sentences in Tamil combining financial health, risk verdict, and recommendation
+- "business_overview": 2-3 sentences in Tamil describing what the company does and its market position
+- "key_strengths": list of 3-4 bullet-point strings in Tamil (positive indicators)
+- "key_concerns": list of 3-4 bullet-point strings in Tamil (risks/red flags)
+- "news_summary": 2-3 sentences in Tamil on promoter/company news sentiment.
+- "litigation_summary": 2-3 sentences in Tamil on litigation exposure
+- "sector_headwinds": 2-3 sentences in Tamil on industry challenges
+- "rejection_reasons": list of reasons in Tamil if decision is REJECT or MANDATORY REVIEW, else empty list
+- "corrective_actions": list of recommended actions in Tamil to improve credit profile
+- "bias_summary": 2-3 sentences in Tamil on whether the AI decision is fair and unbiased
+- "pd_transcript_summary": 2-3 sentences in Tamil summarizing personal discussion findings
+
+Return ONLY valid JSON. No markdown, no code blocks, no extra text.
+
+UCSO Data:
+{ucso_json_str}
+"""
+            print("Calling Sarvam AI API for Tamil CAM report synthesis...")
+            # SARVAM API KEY:
+            # Set the SARVAM_API_KEY environment variable or paste your key here
+            sarvam_api_key = os.environ.get("SARVAM_API_KEY", "")
+
+            sarvam_success = False
+            if sarvam_api_key:
+                try:
+                    import requests
+                    sarvam_url = "https://api.sarvam.ai/v1/chat/completions"
+                    sarvam_headers = {
+                        "api-subscription-key": sarvam_api_key,
+                        "Content-Type": "application/json"
+                    }
+                    sarvam_payload = {
+                        "model": "sarvam-2b",
+                        "messages": [{"role": "user", "content": tamil_prompt}],
+                        "temperature": 0.3,
+                        "max_tokens": 2000
+                    }
+                    sarvam_resp = requests.post(sarvam_url, headers=sarvam_headers, json=sarvam_payload, timeout=40)
+                    if sarvam_resp.status_code == 200:
+                        sarvam_data = sarvam_resp.json()
+                        llm_text = sarvam_data["choices"][0]["message"]["content"].strip()
+                        sarvam_success = True
+                except Exception as e:
+                    print(f"Sarvam AI request error: {e}")
+
+            if not sarvam_success:
+                # Fallback to Groq with Tamil instructions if Sarvam key is pending or request failed
+                api_key = os.environ.get("GROQ_API_KEY", "")
+                groq_model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+                client = Groq(api_key=api_key)
+                response = client.chat.completions.create(
+                    model=groq_model,
+                    max_tokens=2000,
+                    temperature=0.3,
+                    messages=[{"role": "user", "content": tamil_prompt}],
+                )
+                llm_text = response.choices[0].message.content.strip()
+
+            # Parse JSON from response
+            if "```json" in llm_text:
+                llm_json = json.loads(llm_text.split("```json")[1].split("```")[0].strip())
+            elif "```" in llm_text:
+                llm_json = json.loads(llm_text.split("```")[1].split("```")[0].strip())
+            else:
+                llm_json = json.loads(llm_text)
+
+        else:
+            # ──────────────────────────────────────────────────────────
+            # GROQ MODEL CALL FOR ENGLISH (DEFAULT)
+            # ──────────────────────────────────────────────────────────
+            prompt = f"""You are a Senior Credit Analyst at a Tier-1 Indian bank.
 Given the following data from 13 AI agents analyzing a loan application, generate a JSON object with these exact keys.
 Write professionally as if preparing for a credit committee.
 
@@ -686,36 +854,33 @@ Return ONLY valid JSON. No markdown, no code blocks, no extra text.
 UCSO Data:
 {ucso_json_str}
 """
-
-
-    if not data_insufficient:
-        api_key = os.environ.get("GROQ_API_KEY")
-        if not api_key:
-            raise ValueError("GROQ_API_KEY is not configured! LLM synthesis requires a valid Groq API Key.")
+            api_key = os.environ.get("GROQ_API_KEY", "")
+            if not api_key:
+                raise ValueError("GROQ_API_KEY is not configured! LLM synthesis requires a valid Groq API Key.")
+                
+            groq_model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+            print(f"Calling Groq LLM ({groq_model}) for unique CAM report synthesis...")
             
-        groq_model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
-        print(f"Calling Groq LLM ({groq_model}) for unique CAM report synthesis...")
-        
-        try:
-            client = Groq(api_key=api_key)
-            response = client.chat.completions.create(
-                model=groq_model,
-                max_tokens=2000,
-                temperature=0.3,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            llm_text = response.choices[0].message.content.strip()
+            try:
+                client = Groq(api_key=api_key)
+                response = client.chat.completions.create(
+                    model=groq_model,
+                    max_tokens=2000,
+                    temperature=0.3,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                llm_text = response.choices[0].message.content.strip()
 
-            # Parse JSON (handle markdown wrapping)
-            if "```json" in llm_text:
-                llm_json = json.loads(llm_text.split("```json")[1].split("```")[0].strip())
-            elif "```" in llm_text:
-                llm_json = json.loads(llm_text.split("```")[1].split("```")[0].strip())
-            else:
-                llm_json = json.loads(llm_text)
-        except Exception as e:
-            print("GROQ LLM Error:", repr(e))
-            raise RuntimeError(f"GROQ LLM Generation Failed: {e}")
+                # Parse JSON (handle markdown wrapping)
+                if "```json" in llm_text:
+                    llm_json = json.loads(llm_text.split("```json")[1].split("```")[0].strip())
+                elif "```" in llm_text:
+                    llm_json = json.loads(llm_text.split("```")[1].split("```")[0].strip())
+                else:
+                    llm_json = json.loads(llm_text)
+            except Exception as e:
+                print("GROQ LLM Error:", repr(e))
+                raise RuntimeError(f"GROQ LLM Generation Failed: {e}")
 
     # Universal Tag Anchoring & Structural Validator
     raw_news = llm_json.get("news_summary", "No news summary generated.")
@@ -1075,7 +1240,8 @@ class CAMGeneratorAgent(AgentBase):
         )
 
         # Generate the documents
-        output_path, pdf_path = generate_cam_document(ucso, application_id)
+        target_lang = ucso.get("lang") or ucso.get("language") or "en"
+        output_path, pdf_path = generate_cam_document(ucso, application_id, lang=target_lang)
 
         # Validate file size (must be >5KB to not be empty)
         file_size = os.path.getsize(output_path)
