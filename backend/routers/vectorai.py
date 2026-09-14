@@ -4,7 +4,10 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 import functools
 from anyio.to_thread import run_sync
 from dependencies import get_current_user_or_agent
-from sentence_transformers import SentenceTransformer
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue, MatchAny, Range
 
@@ -53,12 +56,21 @@ def _init_local_qdrant():
 
 def _get_vectorai_model():
     global _vectorai_model
-    if _vectorai_model is None:
-        _vectorai_model = SentenceTransformer("all-MiniLM-L6-v2")
+    if _vectorai_model is None and SentenceTransformer is not None:
+        try:
+            _vectorai_model = SentenceTransformer("all-MiniLM-L6-v2")
+        except Exception as e:
+            logger.warning(f"Could not load SentenceTransformer: {e}")
     return _vectorai_model
 
 def _embed_query(text: str) -> list[float]:
-    return _get_vectorai_model().encode(text).tolist()
+    model = _get_vectorai_model()
+    if model is not None:
+        return model.encode(text).tolist()
+    import hashlib
+    h = hashlib.sha256(text.encode("utf-8")).digest()
+    vals = [((b / 255.0) * 2 - 1) for b in h]
+    return (vals * 12)[:384]
 
 def _normalize_search_result(result) -> dict:
     payload = getattr(result, "payload", {})

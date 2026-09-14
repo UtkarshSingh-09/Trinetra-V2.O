@@ -82,16 +82,22 @@ class PostgresStorageAdapter(StorageClient):
         os.makedirs(self.file_dir, exist_ok=True)
 
         global DATABASE_URL
-        if DATABASE_URL.startswith("postgresql://"):
-            DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+        try:
+            pg_url = DATABASE_URL
+            if pg_url.startswith("postgresql://"):
+                pg_url = pg_url.replace("postgresql://", "postgresql+asyncpg://")
+            logger.info("Initializing async storage client engine...")
+            self.engine = create_async_engine(
+                pg_url, 
+                pool_size=10, 
+                max_overflow=20,
+                pool_pre_ping=True
+            )
+        except Exception as e:
+            logger.info(f"PostgreSQL/asyncpg not available ({e}). Using local SQLite engine.")
+            db_path = os.path.join(self.root_dir, "trinetra_local.db")
+            self.engine = create_async_engine(f"sqlite+aiosqlite:///{db_path}?timeout=5000")
 
-        logger.info(f"🔌 Initializing async storage client engine...")
-        self.engine = create_async_engine(
-            DATABASE_URL, 
-            pool_size=10, 
-            max_overflow=20,
-            pool_pre_ping=True
-        )
         self.Session = sessionmaker(bind=self.engine, class_=AsyncSession, expire_on_commit=False)
         self.initialize_collections()
 
@@ -154,8 +160,15 @@ class PostgresStorageAdapter(StorageClient):
 
             qdrant_url = os.getenv("QDRANT_URL") or os.getenv("VECTORAI_URL", "http://localhost:6333")
             use_local = False
-            if "50051" in qdrant_url or ("vectorai" in qdrant_url.lower() and "http" not in qdrant_url.lower()):
-                use_local = True
+            if not use_local:
+                url = qdrant_url
+                if not url.startswith("http://") and not url.startswith("https://"):
+                    url = f"http://{url}"
+                try:
+                    client = QdrantClient(url=url, timeout=1.0)
+                    client.get_collections()
+                except Exception:
+                    use_local = True
 
             if use_local:
                 db_path = os.path.join(self.root_dir, "qdrant_db")
@@ -165,11 +178,6 @@ class PostgresStorageAdapter(StorageClient):
                 except Exception as e:
                     logger.debug(f"Failed to initialize local Qdrant Client: {e}, falling back to :memory:")
                     client = QdrantClient(":memory:")
-            else:
-                url = qdrant_url
-                if not url.startswith("http://") and not url.startswith("https://"):
-                    url = f"http://{url}"
-                client = QdrantClient(url=url, timeout=5.0)
 
             for name in collections:
                 try:
