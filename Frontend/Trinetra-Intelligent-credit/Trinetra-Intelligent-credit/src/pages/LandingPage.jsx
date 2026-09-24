@@ -8,6 +8,7 @@ import Spline from '@splinetool/react-spline'
 import AmbientRingsBackground from '../components/AmbientRingsBackground'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import trisastraLogo from '../assets/trisastra-logo.png'
 import './LandingPage.css'
 
 const fadeUp = {
@@ -188,7 +189,7 @@ export default function LandingPage() {
             >
                 <div className="nav-container">
                     <div className="nav-brand">
-                        <div className="brand-dot" />
+                        <img src={trisastraLogo} alt="TRISASTRA AI" className="landing-nav-logo" />
                         <span className="brand-name">{t('sidebar.brand')}</span>
                     </div>
                     <div className="nav-links">
@@ -509,7 +510,7 @@ export default function LandingPage() {
 
                 <div className="footer-bottom">
                     <div className="brand-lockup">
-                        <div className="brand-dot" />
+                        <img src={trisastraLogo} alt="TRISASTRA AI" className="landing-footer-logo" />
                         <span>{t('sidebar.brand')}</span>
                     </div>
                     <div className="footer-links">

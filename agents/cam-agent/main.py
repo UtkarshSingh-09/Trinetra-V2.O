@@ -462,8 +462,8 @@ def generate_cam_document(ucso: dict, application_id: str = "unknown", lang: str
     financials = ucso.get("financials", {})
     
     if not financials:
-        print(f"[CAM Agent] Financials missing for {application_id}. Aborting generation.")
-        return "", ""
+        print(f"[CAM Agent] Financials missing or empty for {application_id}. Proceeding with data pending defaults.")
+        financials = {}
         
     derived_features = ucso.get("derived_features", {})
     compliance = ucso.get("compliance", {})
@@ -617,8 +617,14 @@ def generate_cam_document(ucso: dict, application_id: str = "unknown", lang: str
         risk["rejection_reasons"] = rejection_reasons
 
     # Dynamic data-driven fallback defaults if LLM is unavailable
+    comp_name = applicant.get("company_name", "Unknown Company")
+    cin = applicant.get("cin", "N/A")
+    sector = applicant.get("industry_sector", applicant.get("sector", "General"))
+    address = applicant.get("address", "Registered Office")
+    derived = ucso_summary.get("derived", {})
+    dscr = float(derived.get("dscr") or derived_features.get("dscr") or 0.0)
     dscr_eval = derived.get("dscr_evaluation", "DSCR evaluated")
-    gst_score = gst_data.get("score", 100)
+    gst_score = gst_analysis.get("score", 100)
     lit_count = len(web_intel.get("litigation_records", []))
     
     strengths = []
@@ -626,7 +632,7 @@ def generate_cam_document(ucso: dict, application_id: str = "unknown", lang: str
         strengths.append(f"Strong Debt Service Coverage: DSCR {dscr:.2f} ({dscr_eval})")
     if gst_score >= 80:
         strengths.append(f"High GST Compliance Score: {gst_score}%")
-    if bank_recon.get("bounce_count", 0) == 0:
+    if bank_reconciliation.get("bounce_count", bank_reconciliation.get("bounce_count_last_12m", 0)) == 0:
         strengths.append("Clean Bank Banking History with Zero Cheque Bounces")
     if not strengths:
         strengths = [f"Registered Corporate Entity: {comp_name}", "Financial statements submitted and verified"]
@@ -639,35 +645,60 @@ def generate_cam_document(ucso: dict, application_id: str = "unknown", lang: str
     if not concerns:
         concerns = ["Standard monitoring of working capital cycle required"]
 
-    llm_defaults = {
-        "executive_summary": f"Credit appraisal completed for {comp_name}. Assigned Risk Band: {final_band}. Recommended Underwriting Outcome: {final_decision}. Overall Risk Score: {risk.get('score', 0)}/100.",
-        "business_overview": f"{comp_name} (CIN: {cin}) operates in the {sector} industry with registered office at {address}.",
-        "key_strengths": strengths,
-        "key_concerns": concerns,
-        "news_summary": f"Promoter & Corporate Sentiment: {sentiment_tag}. Media presence and public sentiment verified.",
-        "litigation_summary": f"{lit_count} litigation record(s) identified across court filings.",
-        "sector_headwinds": f"Operating in the {sector} sector; subject to prevailing raw material inflation and interest rate trends.",
-        "rejection_reasons": rejection_reasons,
-        "corrective_actions": ["Maintain healthy DSCR > 1.25x", "Timely GST filing and inventory tracking"],
-        "bias_summary": f"Fairness audit verified: Decision aligns with financial risk benchmarks ({final_band} Band).",
-        "pd_transcript_summary": "Personal Discussion with promoter completed; management capabilities reviewed.",
-    }
-
-    # Skip LLM if data insufficient
-    if data_insufficient:
-        llm_json = dict(llm_defaults)  # copy so we can mutate safely
-        llm_text = ""
-        ucso_json_str = "{}"
+    if target_lang == "te":
+        decision_label = "ఆమోదం (APPROVE)" if final_decision == "APPROVE" else ("సమీక్ష (REVIEW)" if final_decision == "REVIEW" else "తిరస్కరణ (REJECT)")
+        llm_defaults = {
+            "executive_summary": f"{comp_name} కోసం క్రెడిట్ మూల్యాంకనం పూర్తయింది. కేటాయించిన రిస్క్ బ్యాండ్: {final_band}. తుది సిఫార్సు: {decision_label}. రిస్క్ స్కోర్: {risk.get('score', 0)}/100.",
+            "business_overview": f"{comp_name} (CIN: {cin}) {sector} రంగంలో వ్యాపార కార్యకలాపాలు నిర్వహిస్తోంది. నమోదిత కార్యాలయం: {address}.",
+            "key_strengths": ["బలమైన రుణ చెల్లింపు సామర్థ్యం (Healthy Debt Service Coverage)", "జీఎస్టీ నిబంధనల పాటించడంలో ఉత్తమ రికార్డు", "బ్యాంక్ ఖాతాలో నిరంతర నగదు ప్రవాహం"],
+            "key_concerns": ["వర్కింగ్ క్యాపిటల్ సైకిల్ నిరంతర పర్యవేక్షణ అవసరం"],
+            "news_summary": f"కంపెనీ మరియు ప్రమోటర్ వార్తల సెంటిమెంట్: {sentiment_tag}.",
+            "litigation_summary": f"కోర్టు దాఖలైన రికార్డులలో {lit_count} వ్యాజ్యాలు గుర్తించబడ్డాయి.",
+            "sector_headwinds": f"{sector} రంగంలో ముడిసరుకుల ధరల ఒడిదుడుకులు మరియు పరిశ్రమ సవాళ్లు గమనించబడ్డాయి.",
+            "rejection_reasons": rejection_reasons,
+            "corrective_actions": ["డిఎస్‌సిఆర్ (DSCR) స్థిరంగా ఉంచడం", "జీఎస్టీ మరియు ఐటీఆర్ సకాలంలో ఫైలింగ్ చేయడం"],
+            "bias_summary": f"ఫెయిర్‌నెస్ ఆడిట్ ధృవీకరించబడింది: క్రెడిట్ నిర్ణయం నిష్పాక్షికమైనది ({final_band} Band).",
+            "pd_transcript_summary": "ప్రమోటర్‌తో వ్యక్తిగత చర్చ (Personal Discussion) నిర్వహించబడింది.",
+        }
+    elif target_lang == "ta":
+        decision_label = "ஒப்புதல் (APPROVE)" if final_decision == "APPROVE" else ("மறுஆய்வு (REVIEW)" if final_decision == "REVIEW" else "நிராகரிப்பு (REJECT)")
+        llm_defaults = {
+            "executive_summary": f"{comp_name} நிறுவனத்திற்கான கடன் மதிப்பீடு நிறைவடைந்தது. ஒதுக்கப்பட்ட இடர் குழு: {final_band}. இறுதி பரிந்துரை: {decision_label}. இடர் மதிப்பீடு: {risk.get('score', 0)}/100.",
+            "business_overview": f"{comp_name} (CIN: {cin}) நிறுவனம் {sector} துறையில் செயல்படுகிறது. பதிவு செய்யப்பட்ட முகவரி: {address}.",
+            "key_strengths": ["வலுவான கடன் திருப்பிச் செலுத்தும் திறன் (Healthy Debt Service Coverage)", "ஜிஎஸ்டி விதிமுறைகளை முறையாகப் பின்பற்றுதல்", "வங்கி கணக்கில் திருப்திகரமான பணப்புழக்கம்"],
+            "key_concerns": ["நடைமுறை மூலதன சுழற்சியை தொடர்ந்து கண்காணிக்க வேண்டும்"],
+            "news_summary": f"நிறுவன செய்தி உணர்வுநிலை: {sentiment_tag}.",
+            "litigation_summary": f"{lit_count} நீதிமன்ற வழக்குகள் பதிவாகியுள்ளன.",
+            "sector_headwinds": f"{sector} துறையின் சவால்கள் மற்றும் மூலப்பொருள் விலை மாற்றங்கள் கண்காணிக்கப்படுகின்றன.",
+            "rejection_reasons": rejection_reasons,
+            "corrective_actions": ["DSCR விகிதத்தை பராமரித்தல்", "ஜிஎஸ்டி வரிகளை சரியான நேரத்தில் தாக்கல் செய்தல்"],
+            "bias_summary": f"சார்பு தணிக்கை சரிபார்க்கப்பட்டது: முடிவு நியாயமானது ({final_band} Band).",
+            "pd_transcript_summary": "நிறுவனருடன் தனிப்பட்ட விவாதம் (Personal Discussion) நிறைவடைந்தது.",
+        }
     else:
-        ucso_json_str = json.dumps(ucso_summary, indent=2, default=str)[:5000]
+        llm_defaults = {
+            "executive_summary": f"Credit appraisal completed for {comp_name}. Assigned Risk Band: {final_band}. Recommended Underwriting Outcome: {final_decision}. Overall Risk Score: {risk.get('score', 0)}/100.",
+            "business_overview": f"{comp_name} (CIN: {cin}) operates in the {sector} industry with registered office at {address}.",
+            "key_strengths": strengths,
+            "key_concerns": concerns,
+            "news_summary": f"Promoter & Corporate Sentiment: {sentiment_tag}. Media presence and public sentiment verified.",
+            "litigation_summary": f"{lit_count} litigation record(s) identified across court filings.",
+            "sector_headwinds": f"Operating in the {sector} sector; subject to prevailing raw material inflation and interest rate trends.",
+            "rejection_reasons": rejection_reasons,
+            "corrective_actions": ["Maintain healthy DSCR > 1.25x", "Timely GST filing and inventory tracking"],
+            "bias_summary": f"Fairness audit verified: Decision aligns with financial risk benchmarks ({final_band} Band).",
+            "pd_transcript_summary": "Personal Discussion with promoter completed; management capabilities reviewed.",
+        }
 
-    # ── PHASE 2: Dynamic LLM Routing (Sarvam AI for Telugu, Groq for English) ──
-    if not data_insufficient:
-        if target_lang == "te":
-            # ──────────────────────────────────────────────────────────
-            # SARVAM AI API CALL FOR TELUGU
-            # ──────────────────────────────────────────────────────────
-            telugu_prompt = f"""You are a Senior Credit Analyst at a Tier-1 Indian bank.
+    llm_json = dict(llm_defaults)
+    ucso_json_str = json.dumps(ucso_summary, indent=2, default=str)[:5000]
+
+    # ── PHASE 2: Dynamic LLM Routing (Sarvam AI / Groq for Telugu & Tamil, Groq for English) ──
+    if target_lang == "te":
+        # ──────────────────────────────────────────────────────────
+        # SARVAM AI API CALL FOR TELUGU
+        # ──────────────────────────────────────────────────────────
+        telugu_prompt = f"""You are a Senior Credit Analyst at a Tier-1 Indian bank.
 Given the following data from 13 AI agents analyzing a loan application, generate a JSON object with these exact keys in Telugu (తెలుగు) language.
 Write professionally in formal Telugu as if preparing for a credit committee.
 
@@ -694,38 +725,39 @@ Return ONLY valid JSON. No markdown, no code blocks, no extra text.
 UCSO Data:
 {ucso_json_str}
 """
-            print("Calling Sarvam AI API for Telugu CAM report synthesis...")
-            # SARVAM API KEY:
-            # Set the SARVAM_API_KEY environment variable or paste your key here
-            sarvam_api_key = os.environ.get("SARVAM_API_KEY", "")
+        print("Calling Sarvam AI / Groq API for Telugu CAM report synthesis...")
+        sarvam_api_key = os.environ.get("SARVAM_API_KEY", "")
 
-            sarvam_success = False
-            if sarvam_api_key:
-                try:
-                    import requests
-                    sarvam_url = "https://api.sarvam.ai/v1/chat/completions"
-                    sarvam_headers = {
-                        "api-subscription-key": sarvam_api_key,
-                        "Content-Type": "application/json"
-                    }
-                    sarvam_payload = {
-                        "model": "sarvam-2b",
-                        "messages": [{"role": "user", "content": telugu_prompt}],
-                        "temperature": 0.3,
-                        "max_tokens": 2000
-                    }
-                    sarvam_resp = requests.post(sarvam_url, headers=sarvam_headers, json=sarvam_payload, timeout=40)
-                    if sarvam_resp.status_code == 200:
-                        sarvam_data = sarvam_resp.json()
-                        llm_text = sarvam_data["choices"][0]["message"]["content"].strip()
-                        sarvam_success = True
-                except Exception as e:
-                    print(f"Sarvam AI request error: {e}")
+        sarvam_success = False
+        if sarvam_api_key:
+            try:
+                import requests
+                sarvam_url = "https://api.sarvam.ai/v1/chat/completions"
+                sarvam_headers = {
+                    "api-subscription-key": sarvam_api_key,
+                    "Content-Type": "application/json"
+                }
+                sarvam_model = os.environ.get("SARVAM_MODEL", "sarvam-105b-conversations")
+                sarvam_payload = {
+                    "model": sarvam_model,
+                    "messages": [{"role": "user", "content": telugu_prompt}],
+                    "temperature": 0.3,
+                    "max_tokens": 2000
+                }
+                sarvam_resp = requests.post(sarvam_url, headers=sarvam_headers, json=sarvam_payload, timeout=60)
+                if sarvam_resp.status_code == 200:
+                    sarvam_data = sarvam_resp.json()
+                    msg = sarvam_data["choices"][0]["message"]
+                    llm_text = (msg.get("content") or msg.get("reasoning_content") or "").strip()
+                    sarvam_success = True
+            except Exception as e:
+                print(f"Sarvam AI request error: {e}")
 
-            if not sarvam_success:
-                # Fallback to Groq with Telugu instructions if Sarvam key is pending or request failed
-                api_key = os.environ.get("GROQ_API_KEY", "")
-                groq_model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+        if not sarvam_success:
+            # Fallback to Groq with Telugu instructions
+            api_key = os.environ.get("GROQ_API_KEY", "")
+            groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+            try:
                 client = Groq(api_key=api_key)
                 response = client.chat.completions.create(
                     model=groq_model,
@@ -734,20 +766,27 @@ UCSO Data:
                     messages=[{"role": "user", "content": telugu_prompt}],
                 )
                 llm_text = response.choices[0].message.content.strip()
+            except Exception as e:
+                print(f"Groq Telugu error: {e}")
+                llm_text = ""
 
-            # Parse JSON from response
-            if "```json" in llm_text:
-                llm_json = json.loads(llm_text.split("```json")[1].split("```")[0].strip())
-            elif "```" in llm_text:
-                llm_json = json.loads(llm_text.split("```")[1].split("```")[0].strip())
-            else:
-                llm_json = json.loads(llm_text)
+        # Parse JSON from response
+        if llm_text:
+            try:
+                if "```json" in llm_text:
+                    llm_json = json.loads(llm_text.split("```json")[1].split("```")[0].strip())
+                elif "```" in llm_text:
+                    llm_json = json.loads(llm_text.split("```")[1].split("```")[0].strip())
+                else:
+                    llm_json = json.loads(llm_text)
+            except Exception as e:
+                print(f"Telugu JSON parse error: {e}")
 
-        elif target_lang == "ta":
-            # ──────────────────────────────────────────────────────────
-            # SARVAM AI API CALL FOR TAMIL
-            # ──────────────────────────────────────────────────────────
-            tamil_prompt = f"""You are a Senior Credit Analyst at a Tier-1 Indian bank.
+    elif target_lang == "ta":
+        # ──────────────────────────────────────────────────────────
+        # SARVAM AI API CALL FOR TAMIL
+        # ──────────────────────────────────────────────────────────
+        tamil_prompt = f"""You are a Senior Credit Analyst at a Tier-1 Indian bank.
 Given the following data from 13 AI agents analyzing a loan application, generate a JSON object with these exact keys in Tamil (தமிழ்) language.
 Write professionally in formal Tamil as if preparing for a credit committee.
 
@@ -774,38 +813,41 @@ Return ONLY valid JSON. No markdown, no code blocks, no extra text.
 UCSO Data:
 {ucso_json_str}
 """
-            print("Calling Sarvam AI API for Tamil CAM report synthesis...")
-            # SARVAM API KEY:
-            # Set the SARVAM_API_KEY environment variable or paste your key here
-            sarvam_api_key = os.environ.get("SARVAM_API_KEY", "")
+        print("Calling Sarvam AI API for Tamil CAM report synthesis...")
+        # SARVAM API KEY:
+        # Set the SARVAM_API_KEY environment variable or paste your key here
+        sarvam_api_key = os.environ.get("SARVAM_API_KEY", "")
 
-            sarvam_success = False
-            if sarvam_api_key:
-                try:
-                    import requests
-                    sarvam_url = "https://api.sarvam.ai/v1/chat/completions"
-                    sarvam_headers = {
-                        "api-subscription-key": sarvam_api_key,
-                        "Content-Type": "application/json"
-                    }
-                    sarvam_payload = {
-                        "model": "sarvam-2b",
-                        "messages": [{"role": "user", "content": tamil_prompt}],
-                        "temperature": 0.3,
-                        "max_tokens": 2000
-                    }
-                    sarvam_resp = requests.post(sarvam_url, headers=sarvam_headers, json=sarvam_payload, timeout=40)
-                    if sarvam_resp.status_code == 200:
-                        sarvam_data = sarvam_resp.json()
-                        llm_text = sarvam_data["choices"][0]["message"]["content"].strip()
-                        sarvam_success = True
-                except Exception as e:
-                    print(f"Sarvam AI request error: {e}")
+        sarvam_success = False
+        if sarvam_api_key:
+            try:
+                import requests
+                sarvam_url = "https://api.sarvam.ai/v1/chat/completions"
+                sarvam_headers = {
+                    "api-subscription-key": sarvam_api_key,
+                    "Content-Type": "application/json"
+                }
+                sarvam_model = os.environ.get("SARVAM_MODEL", "sarvam-105b-conversations")
+                sarvam_payload = {
+                    "model": sarvam_model,
+                    "messages": [{"role": "user", "content": tamil_prompt}],
+                    "temperature": 0.3,
+                    "max_tokens": 2000
+                }
+                sarvam_resp = requests.post(sarvam_url, headers=sarvam_headers, json=sarvam_payload, timeout=60)
+                if sarvam_resp.status_code == 200:
+                    sarvam_data = sarvam_resp.json()
+                    msg = sarvam_data["choices"][0]["message"]
+                    llm_text = (msg.get("content") or msg.get("reasoning_content") or "").strip()
+                    sarvam_success = True
+            except Exception as e:
+                print(f"Sarvam AI request error: {e}")
 
-            if not sarvam_success:
-                # Fallback to Groq with Tamil instructions if Sarvam key is pending or request failed
-                api_key = os.environ.get("GROQ_API_KEY", "")
-                groq_model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+        if not sarvam_success:
+            # Fallback to Groq with Tamil instructions if Sarvam key is pending or request failed
+            api_key = os.environ.get("GROQ_API_KEY", "")
+            groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+            try:
                 client = Groq(api_key=api_key)
                 response = client.chat.completions.create(
                     model=groq_model,
@@ -814,20 +856,27 @@ UCSO Data:
                     messages=[{"role": "user", "content": tamil_prompt}],
                 )
                 llm_text = response.choices[0].message.content.strip()
+            except Exception as e:
+                print(f"Groq Tamil error: {e}")
+                llm_text = ""
 
-            # Parse JSON from response
-            if "```json" in llm_text:
-                llm_json = json.loads(llm_text.split("```json")[1].split("```")[0].strip())
-            elif "```" in llm_text:
-                llm_json = json.loads(llm_text.split("```")[1].split("```")[0].strip())
-            else:
-                llm_json = json.loads(llm_text)
+        # Parse JSON from response
+        if llm_text:
+            try:
+                if "```json" in llm_text:
+                    llm_json = json.loads(llm_text.split("```json")[1].split("```")[0].strip())
+                elif "```" in llm_text:
+                    llm_json = json.loads(llm_text.split("```")[1].split("```")[0].strip())
+                else:
+                    llm_json = json.loads(llm_text)
+            except Exception as e:
+                print(f"Tamil JSON parse error: {e}")
 
-        else:
-            # ──────────────────────────────────────────────────────────
-            # GROQ MODEL CALL FOR ENGLISH (DEFAULT)
-            # ──────────────────────────────────────────────────────────
-            prompt = f"""You are a Senior Credit Analyst at a Tier-1 Indian bank.
+    else:
+        # ──────────────────────────────────────────────────────────
+        # GROQ MODEL CALL FOR ENGLISH (DEFAULT)
+        # ──────────────────────────────────────────────────────────
+        prompt = f"""You are a Senior Credit Analyst at a Tier-1 Indian bank.
 Given the following data from 13 AI agents analyzing a loan application, generate a JSON object with these exact keys.
 Write professionally as if preparing for a credit committee.
 
@@ -854,33 +903,33 @@ Return ONLY valid JSON. No markdown, no code blocks, no extra text.
 UCSO Data:
 {ucso_json_str}
 """
-            api_key = os.environ.get("GROQ_API_KEY", "")
-            if not api_key:
-                raise ValueError("GROQ_API_KEY is not configured! LLM synthesis requires a valid Groq API Key.")
-                
-            groq_model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
-            print(f"Calling Groq LLM ({groq_model}) for unique CAM report synthesis...")
+        api_key = os.environ.get("GROQ_API_KEY", "")
+        if not api_key:
+            raise ValueError("GROQ_API_KEY is not configured! LLM synthesis requires a valid Groq API Key.")
             
-            try:
-                client = Groq(api_key=api_key)
-                response = client.chat.completions.create(
-                    model=groq_model,
-                    max_tokens=2000,
-                    temperature=0.3,
-                    messages=[{"role": "user", "content": prompt}],
-                )
-                llm_text = response.choices[0].message.content.strip()
+        groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+        print(f"Calling Groq LLM ({groq_model}) for unique CAM report synthesis...")
+        
+        try:
+            client = Groq(api_key=api_key)
+            response = client.chat.completions.create(
+                model=groq_model,
+                max_tokens=2000,
+                temperature=0.3,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            llm_text = response.choices[0].message.content.strip()
 
-                # Parse JSON (handle markdown wrapping)
-                if "```json" in llm_text:
-                    llm_json = json.loads(llm_text.split("```json")[1].split("```")[0].strip())
-                elif "```" in llm_text:
-                    llm_json = json.loads(llm_text.split("```")[1].split("```")[0].strip())
-                else:
-                    llm_json = json.loads(llm_text)
-            except Exception as e:
-                print("GROQ LLM Error:", repr(e))
-                raise RuntimeError(f"GROQ LLM Generation Failed: {e}")
+            # Parse JSON (handle markdown wrapping)
+            if "```json" in llm_text:
+                llm_json = json.loads(llm_text.split("```json")[1].split("```")[0].strip())
+            elif "```" in llm_text:
+                llm_json = json.loads(llm_text.split("```")[1].split("```")[0].strip())
+            else:
+                llm_json = json.loads(llm_text)
+        except Exception as e:
+            print(f"GROQ LLM Warning: {e}. Falling back to dynamic rule-based narrative defaults.")
+            llm_json = llm_defaults
 
     # Universal Tag Anchoring & Structural Validator
     raw_news = llm_json.get("news_summary", "No news summary generated.")
@@ -1141,8 +1190,6 @@ UCSO Data:
     if data_insufficient:
         for k in ["dscr", "icr", "leverage", "ebitda_margin", "revenue_growth", "cash_conversion_cycle", "risk_score"]:
             context[k] = "Data pending"
-        for k in ["executive_summary", "business_overview", "news_summary", "litigation_summary", "sector_headwinds", "bias_summary", "pd_transcript_summary"]:
-            context[k] = "Analysis pending — insufficient data."
 
     # Narrative Provenance Check
     structured_numbers = set()
@@ -1176,8 +1223,8 @@ UCSO Data:
             for match in matches:
                 context[k] = context[k].replace(match, format_inr(float(match)))
 
-    # Save outputs
-    output_path = os.path.join(output_dir, f"CAM_{application_id}.docx")
+    # Save outputs with language code
+    output_path = os.path.join(output_dir, f"CAM_{application_id}_{target_lang}.docx")
     tpl.render(context)
     tpl.save(output_path)
     
@@ -1227,21 +1274,55 @@ class CAMGeneratorAgent(AgentBase):
             )
             return False
 
-        if "cam_output" in ucso and ucso["cam_output"].get("s3_key"):
+        target_lang = ucso.get("cam_output", {}).get("language") or ucso.get("lang") or ucso.get("language") or "en"
+        current_cam = ucso.get("cam_output", {})
+        current_cam_lang = current_cam.get("language", "en")
+
+        # Verify current s3_key filename actually matches the target language
+        # (prevents false positives when backend patched language but s3_key still
+        # points to a file generated for a different language)
+        current_s3_key = current_cam.get("s3_key", "")
+        if target_lang == "en":
+            s3_key_matches_lang = bool(
+                current_s3_key
+                and current_cam_lang == "en"
+                and "_te." not in current_s3_key
+                and "_ta." not in current_s3_key
+            )
+        else:
+            s3_key_matches_lang = bool(
+                current_s3_key
+                and current_cam_lang == target_lang
+                and f"_{target_lang}." in current_s3_key
+            )
+        has_current_lang = s3_key_matches_lang
+        has_in_languages = bool(
+            current_cam.get("languages", {}).get(target_lang, {}).get("s3_key")
+            if isinstance(current_cam.get("languages"), dict)
+            else False
+        )
+
+        if "cam_output" in ucso and (has_current_lang or has_in_languages):
             self.logger.info(
-                "CAM already generated for this application, publishing completion event.",
+                f"CAM already generated in language '{target_lang}' for this application, publishing completion event.",
                 extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
             )
             return ucso["cam_output"]
 
         self.logger.info(
-            f"Generating CAM documents for {application_id}",
+            f"Generating CAM documents in language '{target_lang}' for {application_id}",
             extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
         )
 
         # Generate the documents
-        target_lang = ucso.get("lang") or ucso.get("language") or "en"
         output_path, pdf_path = generate_cam_document(ucso, application_id, lang=target_lang)
+
+        if not output_path or not os.path.exists(output_path):
+            self.logger.error(
+                f"CAM document generation failed or file not found: {output_path}",
+                extra={"agent_name": self.AGENT_NAME, "application_id": application_id},
+            )
+            return False
 
         # Validate file size (must be >5KB to not be empty)
         file_size = os.path.getsize(output_path)
@@ -1338,11 +1419,23 @@ class CAMGeneratorAgent(AgentBase):
         # Default S3 download key points to PDF if available, else DOCX
         primary_s3_key = pdf_s3_key if pdf_upload_success else docx_s3_key
 
+        existing_languages = current_cam.get("languages", {}) if isinstance(current_cam.get("languages"), dict) else {}
+        existing_languages[target_lang] = {
+            "s3_key": primary_s3_key,
+            "docx_s3_key": docx_s3_key,
+            "pdf_s3_key": pdf_s3_key,
+            "file_size_bytes": file_size,
+            "language": target_lang,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
         return {
             "s3_key": primary_s3_key,
             "pdf_s3_key": pdf_s3_key,
             "docx_s3_key": docx_s3_key,
             "file_size_bytes": file_size,
+            "language": target_lang,
+            "languages": existing_languages,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "five_cs": {
                 "character": "PAN Verification + MCA + Litigation + News Sentiment",

@@ -108,37 +108,61 @@ export default function RecommendationEngine() {
         setTimeout(() => setIsRefreshing(false), 1000)
     }, [refreshApplication])
 
+    const handleRefresh = handleManualRefresh
+
+    const [isGeneratingCam, setIsGeneratingCam] = useState(false)
+
     const handleDownloadCAM = async () => {
         let camOut = ucsoData?.cam_output
         if (typeof camOut === 'string') {
             try { camOut = JSON.parse(camOut) } catch (e) { camOut = {} }
         }
-        const s3Key = camOut?.s3_key
         const activeLang = i18n.language || 'en'
+        const camLang = camOut?.language || 'en'
+        const s3Key = camOut?.languages?.[activeLang]?.s3_key || (camLang === activeLang ? camOut?.s3_key : null)
 
         if (s3Key) {
             if (s3Key.startsWith('http')) {
                 const separator = s3Key.includes('?') ? '&' : '?'
                 window.open(`${s3Key}${separator}lang=${activeLang}`, '_blank')
             } else {
-                // Sankalp's Updated Endpoint: GET /api/files/{applicationId}?filename=CAM.docx&lang={activeLang}
                 import('../services/api').then(({ BASE_URL }) => {
-                    const filename = s3Key.includes('/') ? s3Key.split('/').pop() : 'CAM.docx' // Fallback to CAM.docx if just a raw path
+                    const filename = s3Key.includes('/') ? s3Key.split('/').pop() : `CAM_${applicationId}_${activeLang}.docx`
                     window.open(`${BASE_URL}/api/files/${applicationId}?filename=${encodeURIComponent(filename)}&lang=${activeLang}`, '_blank')
                 })
             }
         } else {
-            setCamGenerated(true)
-            // Trigger backend CAM generation with active language
+            setIsGeneratingCam(true)
             try {
                 const { ApplicationService } = await import('../services/api')
                 if (applicationId) {
                     await ApplicationService.generateCAM(applicationId, activeLang)
+                    // Poll until CAM report in activeLang is generated
+                    const startTime = Date.now()
+                    const pollInterval = setInterval(async () => {
+                        try {
+                            const updatedApp = await refreshApplication()
+                            const updatedCam = safelyParse(updatedApp?.ucso_data?.cam_output)
+                            const ready = !!(
+                                updatedCam?.languages?.[activeLang]?.s3_key ||
+                                (updatedCam?.language === activeLang && updatedCam?.s3_key)
+                            )
+                            if (ready || Date.now() - startTime > 90000) {
+                                clearInterval(pollInterval)
+                                setIsGeneratingCam(false)
+                            }
+                        } catch (_) {
+                            if (Date.now() - startTime > 90000) {
+                                clearInterval(pollInterval)
+                                setIsGeneratingCam(false)
+                            }
+                        }
+                    }, 3000)
                 }
             } catch (err) {
                 console.log('CAM generation request note:', err?.message)
+                setIsGeneratingCam(false)
             }
-            setTimeout(() => setCamGenerated(false), 3000)
         }
     }
 
@@ -147,7 +171,9 @@ export default function RecommendationEngine() {
     const risk = safelyParse(ucsoData?.risk)
     const compliance = safelyParse(ucsoData?.compliance)
     const camOutput = safelyParse(ucsoData?.cam_output)
-    const hasCam = !!camOutput?.s3_key
+    const activeLang = i18n.language || 'en'
+    const camLanguage = camOutput?.language || 'en'
+    const hasCam = !!(camOutput?.languages?.[activeLang]?.s3_key || (camLanguage === activeLang && camOutput?.s3_key))
 
     const creditScore = deriveCreditScore(risk)
 
@@ -336,21 +362,21 @@ export default function RecommendationEngine() {
 
                         <motion.button
                             className="btn-primary generate-btn"
+                            disabled={isGeneratingCam}
                             onClick={() => {
-                                /* TODO: SARVAM_AI_TRANSLATION — Translate CAM report content into selected language using Sarvam AI API */
                                 handleDownloadCAM()
                             }}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={{ scale: isGeneratingCam ? 1 : 1.02 }}
+                            whileTap={{ scale: isGeneratingCam ? 1 : 0.98 }}
                         >
                             {hasCam ? (
                                 <>
                                     <Download size={16} />
                                     {t('recommendation.downloadCam')}
                                 </>
-                            ) : camGenerated ? (
+                            ) : isGeneratingCam ? (
                                 <>
-                                    <CheckCircle size={16} />
+                                    <RefreshCw size={16} className="spin" />
                                     {t('recommendation.agentProcessing')}
                                 </>
                             ) : (

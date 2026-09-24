@@ -248,7 +248,7 @@ export default function Dashboard() {
                         <button className="btn-secondary btn-sm">{t('dashboard.viewAll')}</button>
                     </div>
                     <div className="table-responsive">
-                        <table className="trinetra-table">
+                        <table className="trisastra-table">
                             <thead>
                                 <tr>
                                     <th>{t('dashboard.applicationId')}</th>

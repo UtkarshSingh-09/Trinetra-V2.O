@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { LayoutDashboard, Upload, Search, Gavel, FileOutput, Database, GitBranch } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import trinetraLogo from '../assets/trinetra-logo.jpg'
+import trisastraLogo from '../assets/trisastra-logo.png'
 import './Sidebar.css'
 
 export default function Sidebar() {
@@ -27,7 +27,7 @@ export default function Sidebar() {
             transition={{ type: 'spring', stiffness: 100, damping: 20 }}
         >
             <div className="sidebar-brand">
-                <img src={trinetraLogo} alt="TRISASTRA AI" className="brand-logo" />
+                <img src={trisastraLogo} alt="TRISASTRA AI" className="brand-logo" />
                 <div className="brand-text">
                     <h2>{t('sidebar.brand')}</h2>
                     <span className="brand-badge">{t('sidebar.badge')}</span>
