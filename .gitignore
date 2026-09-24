@@ -54,8 +54,14 @@ backend/logs/
 *.pid
 *.sqlite3
 *.db
+*.db-shm
+*.db-wal
 *.jsonl
 *.bak
+actian_local/
+local_storage/
+backend/actian_local/
+scratch/
 
 # IDEs
 .idea/

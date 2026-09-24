@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/wh
 
 # Copy backend codebase (includes bundled actian_vectorai library)
 COPY . .
+RUN rm -rf /app/synthetic_data
 
 EXPOSE 8000
 
