@@ -158,7 +158,26 @@ async def get_file(
     check_tenant_access(app, current_user)
 
     try:
-        result = await run_sync(storage.get_file, application_id, filename)
+        # Check if language-specific CAM file is available in cam_output
+        ucso = app.get("ucso_data", {})
+        cam_output = ucso.get("cam_output", {})
+        target_s3_key = None
+        if lang and isinstance(cam_output.get("languages"), dict) and lang in cam_output["languages"]:
+            target_s3_key = cam_output["languages"][lang].get("docx_s3_key") or cam_output["languages"][lang].get("s3_key")
+        elif lang and cam_output.get("language") == lang:
+            target_s3_key = cam_output.get("docx_s3_key") or cam_output.get("s3_key")
+
+        result = None
+        if target_s3_key and (not filename or "CAM" in filename.upper()):
+            result = await run_sync(storage.get_file_by_key, target_s3_key)
+
+        if not result and filename:
+            result = await run_sync(storage.get_file, application_id, filename)
+        if not result and lang:
+            result = await run_sync(storage.get_file, application_id, f"CAM_{application_id}_{lang}.docx")
+        if not result:
+            result = await run_sync(storage.get_file, application_id, None)
+
         if not result:
             raise HTTPException(status_code=404, detail="File not found")
 
@@ -237,6 +256,7 @@ async def generate_cam(
         verdict_text = ""
         
         # Check if Sarvam API key is available
+        sarvam_model = os.environ.get("SARVAM_MODEL", "sarvam-105b-conversations")
         if sarvam_api_key:
             try:
                 import requests
@@ -246,19 +266,20 @@ async def generate_cam(
                     "Content-Type": "application/json"
                 }
                 payload = {
-                    "model": "sarvam-2b",
+                    "model": sarvam_model,
                     "messages": [
                         {"role": "user", "content": telugu_prompt}
                     ],
                     "temperature": 0.3,
                     "max_tokens": 1500
                 }
-                response = requests.post(sarvam_url, headers=headers, json=payload, timeout=30)
+                response = requests.post(sarvam_url, headers=headers, json=payload, timeout=60)
                 if response.status_code == 200:
                     data = response.json()
-                    verdict_text = data["choices"][0]["message"]["content"]
+                    msg = data["choices"][0]["message"]
+                    verdict_text = msg.get("content") or msg.get("reasoning_content") or ""
                 else:
-                    logger.warning(f"Sarvam AI API responded with {response.status_code}. Using Groq Telugu fallback.")
+                    logger.warning(f"Sarvam AI API responded with {response.status_code}: {response.text[:200]}. Using Groq Telugu fallback.")
             except Exception as e:
                 logger.error(f"Sarvam AI request failed: {e}")
 
@@ -267,8 +288,9 @@ async def generate_cam(
             try:
                 from groq import Groq
                 client = Groq(api_key=groq_api_key)
+                groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
                 response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model=groq_model,
                     max_tokens=1500,
                     temperature=0.3,
                     messages=[{"role": "user", "content": telugu_prompt}],
@@ -278,7 +300,7 @@ async def generate_cam(
                 logger.error(f"Groq Telugu fallback error: {e}")
                 verdict_text = f"క్రెడిట్ మూల్యాంకనం పూర్తయింది. కంపెనీ: {company_name}, రిస్క్ బ్యాండ్: {risk_band}, తుది నిర్ణయం: {risk_decision}."
 
-        model_used = "Sarvam AI (Telugu)" if sarvam_api_key else "Groq LLaMA (Telugu mode)"
+        model_used = f"Sarvam AI ({sarvam_model} - Telugu)" if (sarvam_api_key and verdict_text) else "Groq LLaMA (Telugu mode)"
 
     elif lang == "ta":
         # ──────────────────────────────────────────────────────────
@@ -300,6 +322,7 @@ async def generate_cam(
         verdict_text = ""
         
         # Check if Sarvam API key is available
+        sarvam_model = os.environ.get("SARVAM_MODEL", "sarvam-105b-conversations")
         if sarvam_api_key:
             try:
                 import requests
@@ -309,29 +332,31 @@ async def generate_cam(
                     "Content-Type": "application/json"
                 }
                 payload = {
-                    "model": "sarvam-2b",
+                    "model": sarvam_model,
                     "messages": [
                         {"role": "user", "content": tamil_prompt}
                     ],
                     "temperature": 0.3,
                     "max_tokens": 1500
                 }
-                response = requests.post(sarvam_url, headers=headers, json=payload, timeout=30)
+                response = requests.post(sarvam_url, headers=headers, json=payload, timeout=60)
                 if response.status_code == 200:
                     data = response.json()
-                    verdict_text = data["choices"][0]["message"]["content"]
+                    msg = data["choices"][0]["message"]
+                    verdict_text = msg.get("content") or msg.get("reasoning_content") or ""
                 else:
-                    logger.warning(f"Sarvam AI API responded with {response.status_code}. Using Groq Tamil fallback.")
+                    logger.warning(f"Sarvam AI API responded with {response.status_code}: {response.text[:200]}. Using Groq Tamil fallback.")
             except Exception as e:
                 logger.error(f"Sarvam AI request failed: {e}")
 
         # Fallback to Groq with Tamil instructions if Sarvam key is pending or failed
         if not verdict_text:
+            groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
             try:
                 from groq import Groq
                 client = Groq(api_key=groq_api_key)
                 response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                    model=groq_model,
                     max_tokens=1500,
                     temperature=0.3,
                     messages=[{"role": "user", "content": tamil_prompt}],
@@ -341,7 +366,7 @@ async def generate_cam(
                 logger.error(f"Groq Tamil fallback error: {e}")
                 verdict_text = f"கடன் மதிப்பீடு முடிந்தது. நிறுவனம்: {company_name}, இடர் குழு: {risk_band}, இறுதி முடிவு: {risk_decision}."
 
-        model_used = "Sarvam AI (Tamil)" if sarvam_api_key else "Groq LLaMA (Tamil mode)"
+        model_used = f"Sarvam AI ({sarvam_model} - Tamil)" if (sarvam_api_key and verdict_text) else "Groq LLaMA (Tamil mode)"
 
     else:
         # ──────────────────────────────────────────────────────────
@@ -360,11 +385,12 @@ Please format your response with:
 3. Key Concerns
 4. Final Recommendation
 """
+        groq_model = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
         try:
             from groq import Groq
             client = Groq(api_key=groq_api_key)
             response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model=groq_model,
                 max_tokens=1500,
                 temperature=0.3,
                 messages=[{"role": "user", "content": english_prompt}],
@@ -374,7 +400,44 @@ Please format your response with:
             logger.error(f"Groq English generation error: {e}")
             verdict_text = f"Credit appraisal completed for {company_name}. Assigned Risk Band: {risk_band}. Decision: {risk_decision}."
 
-        model_used = "Groq LLaMA 3.3 (English)"
+        model_used = f"Groq LLM ({groq_model} - English)"
+
+    cam_data = ucso.get("cam_output", {}) or {}
+
+    # Preserve existing generated files in the "languages" sub-dict before overwriting
+    # so that switching languages doesn't lose prior downloads
+    existing_languages = cam_data.get("languages", {}) if isinstance(cam_data.get("languages"), dict) else {}
+    old_lang = cam_data.get("language", "en")
+    old_s3_key = cam_data.get("s3_key", "")
+    if old_s3_key and old_lang and old_lang not in existing_languages:
+        existing_languages[old_lang] = {
+            "s3_key": old_s3_key,
+            "docx_s3_key": cam_data.get("docx_s3_key", old_s3_key),
+            "pdf_s3_key": cam_data.get("pdf_s3_key", ""),
+            "language": old_lang,
+        }
+
+    cam_data["verdict"] = verdict_text
+    cam_data["model_used"] = model_used
+    cam_data["language"] = lang
+    cam_data["languages"] = existing_languages
+    # Clear s3_key and any cached entry for this language so the cam-agent
+    # always performs a fresh generation when explicitly requested
+    existing_languages.pop(lang, None)
+    cam_data.pop("s3_key", None)
+    cam_data.pop("docx_s3_key", None)
+    cam_data.pop("pdf_s3_key", None)
+    try:
+        await storage.patch_namespace(application_id, "cam_output", cam_data)
+    except Exception as e:
+        logger.warning(f"Could not update cam_output namespace: {e}")
+
+    # Trigger CAM generation in cam-agent
+    logger.info(f"Triggering CAM generation event for {application_id} (lang={lang})")
+    try:
+        await redis_broker.publish("stress_completed", {"application_id": application_id, "lang": lang})
+    except Exception as e:
+        logger.warning(f"Could not publish stress_completed for CAM generation: {e}")
 
     return {
         "status": "SUCCESS",

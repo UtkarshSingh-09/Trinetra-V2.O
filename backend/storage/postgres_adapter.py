@@ -165,7 +165,7 @@ class PostgresStorageAdapter(StorageClient):
                 if not url.startswith("http://") and not url.startswith("https://"):
                     url = f"http://{url}"
                 try:
-                    client = QdrantClient(url=url, timeout=1.0)
+                    client = QdrantClient(url=url, timeout=1.0, check_compatibility=False)
                     client.get_collections()
                 except Exception:
                     use_local = True

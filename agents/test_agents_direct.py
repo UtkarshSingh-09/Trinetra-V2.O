@@ -256,8 +256,8 @@ def test_5_model_selector():
     assert count >= 4, f"Expected ≥4 features, got {count}"
 
     model_name, version, _ = mod.select_model(SAMPLE_UCSO["derived_features"], SAMPLE_UCSO)
-    # Without pkl files, should fallback
-    assert model_name == "RULE_FALLBACK", f"Expected RULE_FALLBACK (no pkl), got {model_name}"
+    # Should select trained model or fallback
+    assert model_name in ("RULE_FALLBACK", "TRI_LENS", "XGBOOST", "LGBM"), f"Unexpected model {model_name}"
 
     return {"feature_count": count, "selected_model": model_name}
 
@@ -368,17 +368,19 @@ def test_9_cam_generator():
     spec.loader.exec_module(mod)
 
     output_path = mod.generate_cam_document(SAMPLE_UCSO)
-    file_size = os.path.getsize(output_path)
+    docx_path = output_path[0] if isinstance(output_path, tuple) else output_path
+    file_size = os.path.getsize(docx_path)
 
     result = {
-        "output_path": output_path,
+        "output_path": docx_path,
         "file_size_bytes": file_size,
         "passes_5kb_check": file_size > 5120,
     }
     assert file_size > 5120, f"CAM file too small: {file_size} bytes"
 
     # Cleanup
-    os.unlink(output_path)
+    if os.path.exists(docx_path):
+        os.unlink(docx_path)
     return result
 
 

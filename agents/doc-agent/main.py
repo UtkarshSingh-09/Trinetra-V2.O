@@ -20,7 +20,10 @@ from shared.agent_base import AgentBase
 from shared.vectorai_client import VectorAIClient
 
 import pdfplumber
-import pytesseract
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
 from PIL import Image
 import requests as http_requests
 import io

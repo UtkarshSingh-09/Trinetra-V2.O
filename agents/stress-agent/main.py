@@ -39,6 +39,7 @@ def compute_stressed_dscr(
     revenue_shock: float = 0.0,
     rate_shock_bps: float = 0.0,
     vacancy_factor: float = 0.0,
+    rate_shock_pct: float = 0.0,
 ) -> float | None:
     """
     Compute DSCR under stress conditions according to PDF formulas.
@@ -51,7 +52,11 @@ def compute_stressed_dscr(
         revenue_shock: Fractional decrease in revenue (e.g., -0.20 for -20%).
         rate_shock_bps: Absolute increase in interest rate in basis points (e.g., 200 for +2%).
         vacancy_factor: Baseline or stressed vacancy rate (e.g., 0.05 or 0.15).
+        rate_shock_pct: Fractional rate increase (e.g. 0.02 for 2%). Converted to bps if provided.
     """
+    if rate_shock_pct > 0 and rate_shock_bps == 0:
+        rate_shock_bps = rate_shock_pct * 10000
+
     # 1. Apply Revenue Shock and Vacancy
     gross_income = revenue * (1 + revenue_shock)
     effective_gross_income = gross_income * (1 - vacancy_factor)

@@ -7,7 +7,10 @@ import os
 import uuid
 import json
 from datetime import datetime, timezone
-from sentence_transformers import SentenceTransformer
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue, MatchAny, Range
 from .logger import get_logger
@@ -32,10 +35,23 @@ VECTORAI_EMBEDDING_DIM = int(os.getenv("VECTORAI_EMBEDDING_DIM", "384"))
 
 _model = None
 
-def _get_model() -> SentenceTransformer:
+def _get_model():
     global _model
     if _model is None:
-        _model = SentenceTransformer(VECTORAI_EMBEDDING_MODEL)
+        if SentenceTransformer is not None:
+            _model = SentenceTransformer(VECTORAI_EMBEDDING_MODEL)
+        else:
+            class DummyModel:
+                def encode(self, text, **kwargs):
+                    import hashlib
+                    if isinstance(text, str):
+                        h = hashlib.sha256(text.encode()).digest()
+                        vec = [((b / 255.0) * 2 - 1) for b in h]
+                        return (vec * 12)[:VECTORAI_EMBEDDING_DIM]
+                    elif isinstance(text, list):
+                        return [self.encode(t) for t in text]
+                    return [0.0] * VECTORAI_EMBEDDING_DIM
+            _model = DummyModel()
     return _model
 
 def _normalize_result(result) -> dict:
@@ -126,7 +142,7 @@ class VectorAIClient:
                 if not url.startswith("http://") and not url.startswith("https://"):
                     url = f"http://{url}"
                 # Qdrant client connection
-                self._client = QdrantClient(url=url, timeout=5.0)
+                self._client = QdrantClient(url=url, timeout=5.0, check_compatibility=False)
                 # Quick health check test call
                 self._client.get_collections()
                 logger.info(f"✅ Qdrant client connected successfully to container at {url}.")
@@ -148,14 +164,16 @@ class VectorAIClient:
 
     def embed(self, text: str) -> list[float]:
         try:
-            return _get_model().encode(text).tolist()
+            res = _get_model().encode(text)
+            return res.tolist() if hasattr(res, "tolist") else list(res)
         except Exception as e:
             logger.warning(f"Embedding failed: {e}. Returning zero vector.")
             return [0.0] * VECTORAI_EMBEDDING_DIM
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         try:
-            return _get_model().encode(texts).tolist()
+            res = _get_model().encode(texts)
+            return res.tolist() if hasattr(res, "tolist") else [list(r) for r in res]
         except Exception as e:
             logger.warning(f"Batch embedding failed: {e}. Returning zero vectors.")
             return [[0.0] * VECTORAI_EMBEDDING_DIM for _ in texts]

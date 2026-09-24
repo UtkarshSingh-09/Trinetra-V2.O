@@ -33,7 +33,7 @@ def _get_qdrant_client():
                 url = qdrant_url
                 if not url.startswith("http://") and not url.startswith("https://"):
                     url = f"http://{url}"
-                client = QdrantClient(url=url, timeout=5.0)
+                client = QdrantClient(url=url, timeout=5.0, check_compatibility=False)
                 client.get_collections()
                 _qdrant_client = client
                 logger.info(f"✅ Qdrant client connected successfully in backend at {url}.")
