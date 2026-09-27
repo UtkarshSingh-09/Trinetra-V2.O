@@ -60,6 +60,16 @@ export function ApplicationProvider({ children }) {
         }
     }, [applicationId]);
 
+    /** Select an application (switches active application across all views) */
+    const selectApplication = useCallback(async (appId) => {
+        if (!appId) return;
+        sessionStorage.setItem('applicationId', appId);
+        setApplicationId(appId);
+        setUcsoData(null);
+        setAgentFeed([]);
+        return await refreshApplication(appId);
+    }, [refreshApplication]);
+
     /** Add a human note (Endpoint 4) */
     const addNote = useCallback(async (noteData) => {
         if (!applicationId) return;
@@ -195,6 +205,7 @@ export function ApplicationProvider({ children }) {
         loading,
         wsConnected,
         createApplication,
+        selectApplication,
         refreshApplication,
         pushAgentUpdate,
         setUcsoData,

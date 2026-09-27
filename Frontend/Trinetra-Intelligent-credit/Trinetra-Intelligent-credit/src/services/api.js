@@ -2,7 +2,9 @@ import axios from 'axios';
 
 // Set VITE_API_BASE_URL in your .env file to the ngrok URL Sankalp shares
 // e.g. VITE_API_BASE_URL=https://abc123.ngrok-free.app
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL
+    ? import.meta.env.VITE_API_BASE_URL
+    : (typeof window !== 'undefined' && (window.location.port === '5173' || window.location.port === '80') ? '' : 'http://localhost:8000');
 
 if (import.meta.env.DEV) {
     console.log(`🚀 [API] Using BASE_URL: ${BASE_URL}`);

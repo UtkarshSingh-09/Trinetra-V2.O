@@ -27,10 +27,16 @@ export const EVENT_TYPES = {
 export function subscribeToAgentFeed(applicationId, onMessage) {
     if (!applicationId) return null;
 
-    // Convert http(s):// to ws(s)://
-    // e.g., http://localhost:8000 -> ws://localhost:8000/ws/{id}
-    const wsBaseUrl = BASE_URL.replace(/^http/, 'ws');
-    const wsUrl = `${wsBaseUrl}/ws/${applicationId}`;
+    let wsUrl;
+    if (BASE_URL && BASE_URL.startsWith('http')) {
+        const wsBaseUrl = BASE_URL.replace(/^http/, 'ws');
+        wsUrl = `${wsBaseUrl}/ws/${applicationId}`;
+    } else if (typeof window !== 'undefined') {
+        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        wsUrl = `${proto}//${window.location.host}/ws/${applicationId}`;
+    } else {
+        wsUrl = `ws://localhost:8000/ws/${applicationId}`;
+    }
 
     console.log(`[WS] Attempting connection to ${wsUrl}`);
     const ws = new WebSocket(wsUrl);

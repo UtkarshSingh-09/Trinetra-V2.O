@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Activity, Eye, GitBranch, IdCard, Loader2 } from 'lucide-react'
 import { useApplication } from '../context/ApplicationContext'
@@ -43,16 +43,22 @@ function normalizeAgentName(name) {
 
 function statusRank(status) {
     const normalized = String(status || '').toUpperCase()
-    if (normalized === 'COMPLETED') return 3
-    if (normalized === 'RUNNING' || normalized === 'IN_PROGRESS') return 2
+    if (normalized === 'COMPLETED' || normalized === 'PASS') return 3
+    if (normalized === 'RUNNING' || normalized === 'IN_PROGRESS' || normalized === 'PROCESSING') return 2
     if (normalized === 'FAILED' || normalized === 'ERROR') return 1
     return 0
 }
 
 export default function AgentPipeline() {
-    const { applicationId, agentFeed, wsConnected } = useApplication()
-    const [showSkeleton] = useState(true)
+    const { applicationId, ucsoData, agentFeed, wsConnected, refreshApplication, loading } = useApplication()
     const { t } = useTranslation()
+
+    // Ensure application data is loaded if an ID exists
+    useEffect(() => {
+        if (applicationId && !ucsoData) {
+            refreshApplication(applicationId)
+        }
+    }, [applicationId, ucsoData, refreshApplication])
 
     const nodeLabels = {
         'compliance-agent': t('pipeline.complianceAgent'),
@@ -77,6 +83,53 @@ export default function AgentPipeline() {
             state[node.id] = 'IDLE'
         })
 
+        // 1. Populate baseline status from persisted UCSO namespaces
+        if (ucsoData) {
+            if (ucsoData.compliance?.status) {
+                state['compliance-agent'] = ucsoData.compliance.status === 'PASS' ? 'COMPLETED' : ucsoData.compliance.status
+            }
+            if (ucsoData.derived_features?.dscr != null || ucsoData.financials?.revenue_annual?.length > 0 || (ucsoData.documents?.files && ucsoData.documents.files.length > 0)) {
+                state['doc-intelligence-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.gst_analysis?.reconciliation_status && ucsoData.gst_analysis.reconciliation_status !== 'UNKNOWN') {
+                state['gst-reconciliation-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.bank_reconciliation?.reconciliation_verdict && ucsoData.bank_reconciliation.reconciliation_verdict !== 'UNKNOWN') {
+                state['bank-recon-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.mca_intelligence?.company_status) {
+                state['mca-intelligence-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.web_intel?.promoter_news?.length > 0 || ucsoData.web_intel?.kb_query_timestamp) {
+                state['web-intelligence-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.risk?.model_used && ucsoData.risk.model_used !== 'N/A') {
+                state['model-selector-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.risk?.score != null || ucsoData.risk?.decision) {
+                state['risk-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.pd_intelligence?.risk_adjustment != null || ucsoData.pd_intelligence?.source_type) {
+                state['pd-transcript-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.bias_checks?.counterfactual_tested != null) {
+                state['bias-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.stress_results?.survival_verdict || ucsoData.stress_results?.worst_case_dscr != null) {
+                state['stress-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.cam_output?.s3_key || ucsoData.cam_output?.docx_s3_key || ucsoData.cam_output?.verdict) {
+                state['cam-generator-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.audit_log?.entries?.length > 0 || ucsoData.audit_log?.latest_check || ucsoData.ews_monitoring) {
+                state['monitor-agent'] = 'COMPLETED'
+            }
+            if (ucsoData.pan_intelligence?.status || ucsoData.pan_intelligence?.pan_number) {
+                state['pan-verification-agent'] = ucsoData.pan_intelligence.status === 'PASS' ? 'COMPLETED' : (ucsoData.pan_intelligence.status || 'COMPLETED')
+            }
+        }
+
+        // 2. Overlay live WebSocket events if available
         agentFeed.forEach((event) => {
             const name = normalizeAgentName(event.agent)
             const mappedNode = PIPELINE_NODES.find((n) => name.includes(n.id.replace('-agent', '')) || n.id === name)
@@ -90,12 +143,12 @@ export default function AgentPipeline() {
         })
 
         return state
-    }, [agentFeed])
+    }, [ucsoData, agentFeed])
 
     const vectorTraffic = useMemo(() => {
         const completedAgents = Object.values(nodeStatus).filter((s) => String(s).toUpperCase() === 'COMPLETED').length
 
-        // Demo-friendly realistic counters derived from completed pipeline progress.
+        // Realistic counters derived from completed pipeline progress.
         const upserts = completedAgents === 0 ? 0 : (completedAgents * 3 + 5)
         const searches = completedAgents === 0 ? 0 : (completedAgents * 2 + 3)
 
@@ -129,7 +182,7 @@ export default function AgentPipeline() {
                         <span>{t('pipeline.nodesCount', { count: PIPELINE_NODES.length })}</span>
                     </div>
 
-                    {showSkeleton && agentFeed.length === 0 ? (
+                    {loading && !ucsoData && applicationId ? (
                         <div className="pipeline-skeleton-wrap">
                             {Array.from({ length: 8 }).map((_, i) => <div className="pipeline-skeleton" key={i} />)}
                         </div>

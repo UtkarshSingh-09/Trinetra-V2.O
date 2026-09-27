@@ -4,6 +4,7 @@ import { Activity, Clock, FileText, CheckCircle, TrendingUp, AlertTriangle, Sear
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useApplication } from '../context/ApplicationContext';
 import apiClient from '../services/api';
 import DashboardLayout from '../components/DashboardLayout';
 import './Dashboard.css';
@@ -89,9 +90,10 @@ export default function Dashboard() {
         fetchDashboardData();
     }, []);
 
+    const { selectApplication } = useApplication();
+
     const handleApplicationClick = (id) => {
-        // Find if local session has it, otherwise navigate to ingestor to load it
-        sessionStorage.setItem('applicationId', id);
+        selectApplication(id);
         navigate('/recommendation');
     };
 

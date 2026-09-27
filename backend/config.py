@@ -69,7 +69,7 @@ VECTORAI_URL = os.getenv("QDRANT_URL", os.getenv("VECTORAI_URL", "http://localho
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 # ── CORS ──
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000").split(",")
 
 # ── Server ──
 HOST = os.getenv("HOST", "0.0.0.0")

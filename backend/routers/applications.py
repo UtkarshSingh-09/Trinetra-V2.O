@@ -424,9 +424,9 @@ Please format your response with:
     # Clear s3_key and any cached entry for this language so the cam-agent
     # always performs a fresh generation when explicitly requested
     existing_languages.pop(lang, None)
-    cam_data.pop("s3_key", None)
-    cam_data.pop("docx_s3_key", None)
-    cam_data.pop("pdf_s3_key", None)
+    cam_data["s3_key"] = ""
+    cam_data["docx_s3_key"] = ""
+    cam_data["pdf_s3_key"] = ""
     try:
         await storage.patch_namespace(application_id, "cam_output", cam_data)
     except Exception as e:

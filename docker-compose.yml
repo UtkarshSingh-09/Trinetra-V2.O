@@ -225,6 +225,8 @@ services:
     command: python cam-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
+    volumes:
+      - ./agents/cam-agent/trinetra_cam_template.docx:/app/cam-agent/trinetra_cam_template.docx:ro
     depends_on: [compliance-agent]
     restart: unless-stopped
 
