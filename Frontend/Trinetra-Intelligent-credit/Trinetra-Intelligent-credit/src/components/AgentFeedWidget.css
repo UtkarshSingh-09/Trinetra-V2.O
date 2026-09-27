@@ -1,0 +1,249 @@
+.agent-feed-widget {
+    background: var(--color-bg-card);
+    border: var(--border-subtle);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.afw-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: var(--border-subtle);
+}
+
+.afw-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-primary);
+}
+
+.afw-title h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.pulse-icon {
+    color: #00d4aa;
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+.afw-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.afw-status.connected {
+    color: #00d4aa;
+    background: rgba(0, 212, 170, 0.1);
+}
+
+.afw-status.disconnected {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.afw-list {
+    padding: 12px;
+    max-height: 320px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.afw-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.afw-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.afw-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.afw-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 32px 16px;
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+.afw-empty p {
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.afw-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    animation: new-item-flash 1.5s ease-out forwards;
+    flex-shrink: 0;
+}
+
+.afw-item.vector-event {
+    border-color: rgba(204, 255, 0, 0.6);
+    background: linear-gradient(120deg, rgba(204, 255, 0, 0.16), rgba(255, 255, 255, 0.82));
+}
+
+@keyframes new-item-flash {
+    0% {
+        background: rgba(0, 212, 170, 0.15);
+        border-color: rgba(0, 212, 170, 0.4);
+    }
+
+    100% {
+        background: rgba(0, 0, 0, 0.02);
+        border-color: rgba(0, 0, 0, 0.04);
+    }
+}
+
+.afw-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+}
+
+.afw-dot.success {
+    background: #00d4aa;
+    box-shadow: 0 0 6px rgba(0, 212, 170, 0.5);
+}
+
+.afw-dot.warning {
+    background: #f59e0b;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+}
+
+.afw-dot.danger {
+    background: #ef4444;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+}
+
+.afw-dot.info {
+    background: #00b4d8;
+    box-shadow: 0 0 6px rgba(0, 180, 216, 0.5);
+}
+
+.afw-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.afw-agent-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    /* Allows the badge to drop below the name if space is tight */
+    gap: 8px;
+    margin-bottom: 6px;
+    width: 100%;
+}
+
+.afw-agent {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60%;
+    /* Stop agent name from pushing status out */
+}
+
+.afw-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.afw-badge.success {
+    color: #00d4aa;
+    background: rgba(0, 212, 170, 0.1);
+}
+
+.afw-badge.warning {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.afw-badge.danger {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.afw-badge.info {
+    color: #00b4d8;
+    background: rgba(0, 180, 216, 0.1);
+}
+
+.afw-message {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.5;
+    word-break: break-word;
+    /* Ensure long words like URLs wrap properly */
+}
+
+.afw-vector-chip {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    color: #0f172a;
+    background: rgba(204, 255, 0, 0.5);
+    border-radius: 999px;
+    padding: 2px 8px;
+}
+
+.afw-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}

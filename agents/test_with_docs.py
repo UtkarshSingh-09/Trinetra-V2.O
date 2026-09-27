@@ -72,25 +72,33 @@ def collect_inputs():
     parser.add_argument("--company", help="Company name", default="")
     parser.add_argument("--pan", help="PAN number", default="")
     parser.add_argument("--loan-amount", help="Loan amount in ₹", default="")
+    parser.add_argument("--non-interactive", "-y", action="store_true", help="Non-interactive mode (use defaults)")
     args = parser.parse_args()
 
     print("╔══════════════════════════════════════════════════════════╗")
     print("║   TRINETRA — Real Document Agent Testing                ║")
     print("╚══════════════════════════════════════════════════════════╝")
 
+    is_auto = args.non_interactive
+
     # Interactive prompts for missing info
-    company = args.company or input("\n  Company Name: ").strip() or "Test Company Pvt Ltd"
-    pan = args.pan or input("  PAN: ").strip() or "AABCT0000A"
-    loan_str = args.loan_amount or input("  Loan Amount (₹, e.g. 2,00,00,000): ").strip() or "20000000"
-    loan_amount = float(loan_str.replace(",", "").replace("₹", "").strip())
+    company = args.company or (not is_auto and input("\n  Company Name: ").strip()) or "Delta Enterprises"
+    pan = args.pan or (not is_auto and input("  PAN: ").strip()) or "MEZFD4910J"
+    loan_str = args.loan_amount or (not is_auto and input("  Loan Amount (₹, e.g. 2,00,00,000): ").strip()) or "20000000"
+    loan_amount = float(str(loan_str).replace(",", "").replace("₹", "").strip())
 
     # Collect financial details
-    print("\n  ── Enter Financial Details (press Enter for defaults) ──")
+    if not is_auto:
+        print("\n  ── Enter Financial Details (press Enter for defaults) ──")
     def ask_float(prompt, default):
+        if is_auto:
+            return default
         val = input(f"  {prompt} [{default}]: ").strip()
         return float(val.replace(",", "").replace("₹", "")) if val else default
 
     def ask_int(prompt, default):
+        if is_auto:
+            return default
         val = input(f"  {prompt} [{default}]: ").strip()
         return int(val.replace(",", "")) if val else default
 
@@ -107,7 +115,8 @@ def collect_inputs():
     current_liabilities = ask_float("Current Liabilities (₹)", 18000000)
 
     # Collect document paths
-    print("\n  ── Document Paths (press Enter to skip) ──")
+    if not is_auto:
+        print("\n  ── Document Paths (press Enter to skip) ──")
     docs = {}
     doc_types = {
         "ANNUAL_REPORT": ("Annual Report PDF", args.annual_report),
@@ -116,7 +125,7 @@ def collect_inputs():
         "ITR": ("ITR PDF", args.itr),
     }
     for doc_type, (label, cli_path) in doc_types.items():
-        path = cli_path or input(f"  {label} path: ").strip()
+        path = cli_path or (not is_auto and input(f"  {label} path: ").strip())
         if path and os.path.exists(path):
             docs[doc_type] = path
             print(f"     ✓ Found: {os.path.basename(path)} ({os.path.getsize(path)/1024:.1f} KB)")
@@ -124,8 +133,11 @@ def collect_inputs():
             print(f"     ✗ File not found: {path}")
 
     # PD Notes
-    print("\n  ── Personal Discussion Notes ──")
-    pd_notes = input("  Paste PD transcript/notes (or press Enter for default): ").strip()
+    if not is_auto:
+        print("\n  ── Personal Discussion Notes ──")
+        pd_notes = input("  Paste PD transcript/notes (or press Enter for default): ").strip()
+    else:
+        pd_notes = ""
     if not pd_notes:
         pd_notes = (
             f"The promoter of {company} has been in business for over 5 years. "
@@ -472,8 +484,9 @@ def run_pipeline(inputs):
     cam_mod = load_module("cam-agent", "cam_agent")
     ucso["decision_confidence"] = {"score": 0.82, "formula": "0.4*model + 0.3*doc + 0.2*recon + 0.1*web"}
     cam_path = cam_mod.generate_cam_document(ucso)
-    cam_size = os.path.getsize(cam_path)
-    info("CAM File", cam_path)
+    docx_file = cam_path[0] if isinstance(cam_path, tuple) else cam_path
+    cam_size = os.path.getsize(docx_file)
+    info("CAM File", docx_file)
     info("File Size", f"{cam_size/1024:.1f} KB")
     ok("CAM generated → cam_generated")
 
@@ -507,7 +520,8 @@ def run_pipeline(inputs):
     print(f"{'═'*60}")
 
     # Save results
-    result_path = f"/tmp/trinetra_mock/{app_id}_result.json"
+    import tempfile
+    result_path = os.path.join(tempfile.gettempdir(), "trinetra_mock", f"{app_id}_result.json")
     os.makedirs(os.path.dirname(result_path), exist_ok=True)
     with open(result_path, "w") as f:
         json.dump(ucso, f, indent=2, default=str)

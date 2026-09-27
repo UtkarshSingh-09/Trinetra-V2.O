@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ── Relational Database ──
   db:
@@ -13,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
 
   # ── Vector Database ──
@@ -41,12 +44,13 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # ── API Orchestrator ──
+  # ── API Orchestrator (Backend) ──
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: trinetra-backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
     environment:
@@ -55,13 +59,19 @@ services:
       - REDIS_URL=redis://redis:6379
       - QDRANT_URL=http://qdrant:6333
       - VECTORAI_URL=http://qdrant:6333
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/trinetra
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/trinetra
       - STORAGE_MODE=edge
-      - CORS_ORIGINS=http://localhost:5173,http://localhost:3000,http://64.227.172.140:5173,http://64.227.172.140
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:3000,http://frontend:80
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-120b}
+      - SARVAM_API_KEY=${SARVAM_API_KEY:-}
+      - SARVAM_MODEL=${SARVAM_MODEL:-sarvam-105b-conversations}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
+      - AGENT_SERVICE_TOKEN=${AGENT_SERVICE_TOKEN:-}
       - OIDC_ISSUER=${OIDC_ISSUER:-}
       - OIDC_AUDIENCE=${OIDC_AUDIENCE:-}
     volumes:
-      - ./backend/local_storage:/app/local_storage
+      - backend_storage:/app/local_storage
       - ./synthetic_data:/app/synthetic_data:ro
     depends_on:
       redis:
@@ -69,19 +79,19 @@ services:
       qdrant:
         condition: service_started
       db:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   # ── Frontend App ──
   frontend:
     build:
-      context: ./Frontend/Trinetra-Intelligent-credit
+      context: ./Frontend/Trinetra-Intelligent-credit/Trinetra-Intelligent-credit
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
     container_name: trinetra-frontend
     ports:
       - "5173:80"
-    volumes:
-      - ./Frontend/Trinetra-Intelligent-credit/dist:/usr/share/nginx/html:ro
     depends_on:
       - backend
     restart: unless-stopped
@@ -99,11 +109,14 @@ services:
       - BACKEND_URL=http://backend:8000
       - QDRANT_URL=http://qdrant:6333
       - VECTORAI_URL=http://qdrant:6333
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/trinetra
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/trinetra
       - GROQ_API_KEY=${GROQ_API_KEY:-}
-      - GROQ_MODEL=llama-3.3-70b-versatile
+      - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-120b}
+      - SARVAM_API_KEY=${SARVAM_API_KEY:-}
+      - SARVAM_MODEL=${SARVAM_MODEL:-sarvam-105b-conversations}
       - SUREPASS_API_KEY=${SUREPASS_API_KEY:-}
       - SUREPASS_BASE_URL=https://kyc-api.surepass.io/api/v1
+      - AGENT_SERVICE_TOKEN=${AGENT_SERVICE_TOKEN:-}
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=llama3
     deploy: &agent-deploy
@@ -122,7 +135,7 @@ services:
     command: python doc-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   pd-agent:
@@ -131,7 +144,7 @@ services:
     command: python pd-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   gst-agent:
@@ -140,7 +153,7 @@ services:
     command: python gst-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   bank-recon-agent:
@@ -149,25 +162,25 @@ services:
     command: python bank-recon-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   mca-agent:
     image: trinetra-agent:latest
     container_name: agent-mca
-    command: sh -c "python -c 'import bs4' 2>/dev/null || pip install beautifulsoup4; python mca-agent/main.py"
+    command: python mca-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   web-agent:
     image: trinetra-agent:latest
     container_name: agent-web
-    command: sh -c "python -c 'import bs4' 2>/dev/null || pip install beautifulsoup4; python web-agent/main.py"
+    command: python web-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   model-selector-agent:
@@ -176,7 +189,7 @@ services:
     command: python model-selector-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   risk-agent:
@@ -185,7 +198,7 @@ services:
     command: python risk-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   bias-agent:
@@ -194,7 +207,7 @@ services:
     command: python bias-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   stress-agent:
@@ -203,7 +216,7 @@ services:
     command: python stress-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   cam-agent:
@@ -212,7 +225,9 @@ services:
     command: python cam-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    volumes:
+      - ./agents/cam-agent/trinetra_cam_template.docx:/app/cam-agent/trinetra_cam_template.docx:ro
+    depends_on: [compliance-agent]
     restart: unless-stopped
 
   monitor-agent:
@@ -221,9 +236,20 @@ services:
     command: python monitor-agent/main.py
     environment: *agent-env
     deploy: *agent-deploy
-    depends_on: [backend]
+    depends_on: [compliance-agent]
     restart: unless-stopped
+
+  pan-agent:
+    image: trinetra-agent:latest
+    container_name: agent-pan
+    command: python pan-agent/main.py
+    environment: *agent-env
+    deploy: *agent-deploy
+    depends_on: [compliance-agent]
+    restart: unless-stopped
+
 volumes:
   qdrant_data:
   redis_data:
   pg_data:
+  backend_storage:

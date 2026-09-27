@@ -51,7 +51,7 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "")
 if not JWT_SECRET_KEY:
     import secrets as _sec
     JWT_SECRET_KEY = _sec.token_hex(32)
-    print(f"⚠️  JWT_SECRET_KEY not set in .env — generated ephemeral key (sessions won't survive restart)")
+    print(f"[WARN] JWT_SECRET_KEY not set in .env -- generated ephemeral key (sessions won't survive restart)")
 
 OIDC_ISSUER = os.getenv("OIDC_ISSUER", "")
 OIDC_AUDIENCE = os.getenv("OIDC_AUDIENCE", "")
@@ -69,7 +69,7 @@ VECTORAI_URL = os.getenv("QDRANT_URL", os.getenv("VECTORAI_URL", "http://localho
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 # ── CORS ──
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000").split(",")
 
 # ── Server ──
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -80,4 +80,4 @@ AGENT_SERVICE_TOKEN = os.getenv("AGENT_SERVICE_TOKEN", "")
 if not AGENT_SERVICE_TOKEN:
     import secrets as _sec2
     AGENT_SERVICE_TOKEN = _sec2.token_hex(24)
-    print(f"⚠️  AGENT_SERVICE_TOKEN not set in .env — generated ephemeral token: {AGENT_SERVICE_TOKEN[:12]}...")
+    print(f"[WARN] AGENT_SERVICE_TOKEN not set in .env -- generated ephemeral token: {AGENT_SERVICE_TOKEN[:12]}...")
