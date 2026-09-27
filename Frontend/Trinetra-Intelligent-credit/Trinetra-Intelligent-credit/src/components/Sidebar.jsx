@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { LayoutDashboard, Upload, Search, Gavel, FileOutput, Database, GitBranch } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -26,13 +26,13 @@ export default function Sidebar() {
             animate={{ x: 0 }}
             transition={{ type: 'spring', stiffness: 100, damping: 20 }}
         >
-            <div className="sidebar-brand">
+            <Link to="/dashboard" className="sidebar-brand">
                 <img src={trisastraLogo} alt="TRISASTRA AI" className="brand-logo" />
                 <div className="brand-text">
                     <h2>{t('sidebar.brand')}</h2>
                     <span className="brand-badge">{t('sidebar.badge')}</span>
                 </div>
-            </div>
+            </Link>
 
             <nav className="sidebar-nav">
                 {navItems.map((item, index) => {
